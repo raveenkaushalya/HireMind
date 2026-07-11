@@ -7,6 +7,7 @@ React + Vite frontend for the AI Recruitment Platform.
 - `src/pages/auth` - login, register, forgot password, reset password
 - `src/pages/about` - about us and company pages
 - `src/pages/recruiter` - recruiter portal and dashboard
+- `src/pages/hiring-manager` - hiring manager portal and dashboard
 - `src/pages/admin` - admin portal and dashboard
 - `src/pages/candidate` - candidate portal and dashboard
 - `src/components` - reusable UI, layout, and form components
