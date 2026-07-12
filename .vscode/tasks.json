@@ -1,0 +1,93 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build-frontend",
+			"type": "shell",
+			"command": "cd frontend && npm install && npm run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "build-frontend",
+			"type": "shell",
+			"command": "cd frontend; npm install; npm run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "build-frontend-verify",
+			"type": "shell",
+			"command": "cd frontend; npm install; npm run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "install-node",
+			"type": "shell",
+			"command": "winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "verify-node",
+			"type": "shell",
+			"command": "node --version; npm --version",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "build-frontend-verify",
+			"type": "shell",
+			"command": "cd frontend; \"C:\\Program Files\\nodejs\\npm.cmd\" install; \"C:\\Program Files\\nodejs\\npm.cmd\" run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "verify-node-absolute",
+			"type": "shell",
+			"command": "& 'C:\\Program Files\\nodejs\\npm.cmd' --version",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "build-frontend-absolute",
+			"type": "shell",
+			"command": "cd frontend; & 'C:\\Program Files\\nodejs\\npm.cmd' install; & 'C:\\Program Files\\nodejs\\npm.cmd' run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "build-frontend-pathfix",
+			"type": "shell",
+			"command": "$env:PATH = 'C:\\Program Files\\nodejs;' + $env:PATH; cd frontend; npm install; npm run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "build-frontend-pathfix2",
+			"type": "shell",
+			"command": "$env:PATH = 'C:\\Program Files\\nodejs;' + $env:PATH; cd frontend; npm.cmd install; npm.cmd run build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "run-frontend-dev",
+			"type": "shell",
+			"command": "$env:PATH = 'C:\\Program Files\\nodejs;' + $env:PATH; cd frontend; npm.cmd run dev -- --host 0.0.0.0",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}
