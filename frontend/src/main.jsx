@@ -1,8 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
+import './styles/globals.css';
 
 function App() {
-  return <div>HireMind Frontend</div>;
+  return <RecruiterDashboard />;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
