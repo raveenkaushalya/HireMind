@@ -1,10 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import AppRoutes from './routes/AppRoutes';
-import './styles/globals.css';
+
+function App() {
+  return <div>HireMind Frontend</div>;
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AppRoutes />
+    <App />
   </React.StrictMode>
 );
