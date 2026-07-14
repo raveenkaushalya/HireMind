@@ -1,0 +1,87 @@
+/*
+  HireMind — Candidate Portal design tokens
+  ------------------------------------------------------------
+  Palette rationale:
+  - Ink/navy (--cp-ink-*) carries authority and trust — the "hiring" side of the brand.
+  - Signal green (--cp-signal) is reserved for forward motion: progress, confirmations,
+    the pipeline track. It never appears as decoration, only as "this moved forward".
+  - Aura violet (--cp-aura) is reserved exclusively for AI-originated content (the
+    recommended-jobs feed and the assistant), so a candidate always knows, at a glance,
+    when HireMind's model made the call vs. when they did.
+  - Warm amber (--cp-flag) is reserved for attention/action-needed states (interview
+    confirmations awaiting a response).
+*/
+
+:root {
+  /* Surfaces */
+  --cp-bg: #f3f5f8;
+  --cp-surface: #ffffff;
+  --cp-surface-sunken: #eaeef3;
+  --cp-border: #dde3ec;
+  --cp-border-strong: #c7d0dd;
+
+  /* Ink (text + brand) */
+  --cp-ink-900: #131c2e;
+  --cp-ink-700: #2b3a56;
+  --cp-ink-500: #5b6b85;
+  --cp-ink-300: #93a1b6;
+
+  /* Signal — progress / success */
+  --cp-signal-900: #0b4f3d;
+  --cp-signal-700: #157a5c;
+  --cp-signal-500: #1f9d75;
+  --cp-signal-100: #e0f4ec;
+
+  /* Aura — AI surfaces only */
+  --cp-aura-700: #4c3aa8;
+  --cp-aura-500: #6c5ce7;
+  --cp-aura-100: #ece9fb;
+
+  /* Flag — action needed */
+  --cp-flag-700: #a15a06;
+  --cp-flag-500: #e2932f;
+  --cp-flag-100: #fbeed9;
+
+  /* Danger */
+  --cp-danger-700: #9c2c39;
+  --cp-danger-500: #d64550;
+  --cp-danger-100: #fbe4e6;
+
+  /* Type */
+  --cp-font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --cp-font-body: "Inter", system-ui, sans-serif;
+  --cp-font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --cp-size-2xs: 0.75rem;
+  --cp-size-xs: 0.8125rem;
+  --cp-size-sm: 0.9375rem;
+  --cp-size-md: 1rem;
+  --cp-size-lg: 1.25rem;
+  --cp-size-xl: 1.75rem;
+  --cp-size-2xl: 2.5rem;
+
+  /* Spacing (4px base) */
+  --cp-space-1: 0.25rem;
+  --cp-space-2: 0.5rem;
+  --cp-space-3: 0.75rem;
+  --cp-space-4: 1rem;
+  --cp-space-5: 1.5rem;
+  --cp-space-6: 2rem;
+  --cp-space-7: 3rem;
+
+  --cp-radius-sm: 8px;
+  --cp-radius-md: 14px;
+  --cp-radius-lg: 22px;
+
+  --cp-shadow-sm: 0 1px 2px rgba(19, 28, 46, 0.06);
+  --cp-shadow-md: 0 6px 20px rgba(19, 28, 46, 0.08);
+  --cp-shadow-lg: 0 16px 40px rgba(19, 28, 46, 0.14);
+
+  --cp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --cp-ease: linear;
+  }
+}

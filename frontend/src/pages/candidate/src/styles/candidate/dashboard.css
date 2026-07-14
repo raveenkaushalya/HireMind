@@ -1,0 +1,56 @@
+.cp-stat-card {
+  padding: var(--cp-space-5);
+}
+
+.cp-stat-value {
+  font-family: var(--cp-font-display);
+  font-size: var(--cp-size-2xl);
+  font-weight: 600;
+  color: var(--cp-ink-900);
+  margin: 0;
+}
+
+.cp-stat-label {
+  font-size: var(--cp-size-xs);
+  color: var(--cp-ink-500);
+  margin: var(--cp-space-1) 0 0;
+}
+
+.cp-quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cp-space-3);
+  margin-top: var(--cp-space-2);
+}
+
+.cp-quick-link {
+  text-decoration: none;
+  padding: var(--cp-space-4);
+  flex: 1 1 200px;
+  display: block;
+  transition: box-shadow 0.15s var(--cp-ease), transform 0.15s var(--cp-ease);
+}
+
+.cp-quick-link:hover {
+  box-shadow: var(--cp-shadow-md);
+  transform: translateY(-1px);
+}
+
+.cp-quick-link-title {
+  font-weight: 600;
+  color: var(--cp-ink-900);
+  font-size: var(--cp-size-sm);
+  margin: 0 0 4px;
+}
+
+.cp-quick-link-desc {
+  font-size: var(--cp-size-xs);
+  color: var(--cp-ink-500);
+  margin: 0;
+}
+
+.cp-dashboard-section-title {
+  font-family: var(--cp-font-display);
+  font-size: var(--cp-size-lg);
+  margin: 0 0 var(--cp-space-4);
+}

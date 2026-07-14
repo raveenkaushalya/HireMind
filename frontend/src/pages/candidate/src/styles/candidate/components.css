@@ -1,0 +1,313 @@
+/* ---------- Buttons ---------- */
+.cp-btn {
+  font-family: var(--cp-font-body);
+  font-size: var(--cp-size-sm);
+  font-weight: 600;
+  border-radius: var(--cp-radius-sm);
+  padding: var(--cp-space-3) var(--cp-space-5);
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cp-space-2);
+  transition: transform 0.12s var(--cp-ease), box-shadow 0.12s var(--cp-ease), background 0.12s var(--cp-ease);
+  line-height: 1;
+}
+
+.cp-btn:active {
+  transform: translateY(1px);
+}
+
+.cp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cp-btn-primary {
+  background: var(--cp-ink-900);
+  color: #fff;
+}
+
+.cp-btn-primary:hover:not(:disabled) {
+  box-shadow: var(--cp-shadow-md);
+}
+
+.cp-btn-signal {
+  background: var(--cp-signal-500);
+  color: #fff;
+}
+
+.cp-btn-signal:hover:not(:disabled) {
+  background: var(--cp-signal-700);
+}
+
+.cp-btn-ghost {
+  background: transparent;
+  border-color: var(--cp-border-strong);
+  color: var(--cp-ink-700);
+}
+
+.cp-btn-ghost:hover:not(:disabled) {
+  background: var(--cp-surface-sunken);
+}
+
+.cp-btn-danger-ghost {
+  background: transparent;
+  border-color: var(--cp-danger-100);
+  color: var(--cp-danger-700);
+}
+
+.cp-btn-danger-ghost:hover:not(:disabled) {
+  background: var(--cp-danger-100);
+}
+
+.cp-btn-sm {
+  padding: var(--cp-space-2) var(--cp-space-3);
+  font-size: var(--cp-size-xs);
+}
+
+.cp-btn-icon {
+  padding: var(--cp-space-2);
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--cp-border);
+  color: var(--cp-ink-700);
+}
+
+/* ---------- Form fields ---------- */
+.cp-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cp-space-2);
+  margin-bottom: var(--cp-space-4);
+}
+
+.cp-field label {
+  font-size: var(--cp-size-xs);
+  font-weight: 600;
+  color: var(--cp-ink-700);
+}
+
+.cp-field .cp-hint {
+  font-size: var(--cp-size-2xs);
+  color: var(--cp-ink-300);
+}
+
+.cp-input,
+.cp-select,
+.cp-textarea {
+  font-family: var(--cp-font-body);
+  font-size: var(--cp-size-sm);
+  padding: var(--cp-space-3);
+  border-radius: var(--cp-radius-sm);
+  border: 1px solid var(--cp-border-strong);
+  background: var(--cp-surface);
+  color: var(--cp-ink-900);
+}
+
+.cp-textarea {
+  resize: vertical;
+  min-height: 84px;
+}
+
+.cp-input.has-error,
+.cp-textarea.has-error {
+  border-color: var(--cp-danger-500);
+}
+
+.cp-error-text {
+  font-size: var(--cp-size-2xs);
+  color: var(--cp-danger-700);
+}
+
+.cp-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--cp-space-4);
+}
+
+@media (max-width: 700px) {
+  .cp-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Tags / chips ---------- */
+.cp-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cp-space-1);
+  font-family: var(--cp-font-mono);
+  font-size: var(--cp-size-2xs);
+  padding: 3px var(--cp-space-2);
+  border-radius: 999px;
+  background: var(--cp-surface-sunken);
+  color: var(--cp-ink-700);
+  border: 1px solid var(--cp-border);
+}
+
+.cp-tag button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+  padding: 0;
+  line-height: 1;
+}
+
+.cp-tag-input-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cp-space-2);
+  padding: var(--cp-space-2);
+  border: 1px solid var(--cp-border-strong);
+  border-radius: var(--cp-radius-sm);
+  background: var(--cp-surface);
+}
+
+.cp-tag-input-wrap input {
+  border: none;
+  outline: none;
+  flex: 1;
+  min-width: 120px;
+  font-family: var(--cp-font-body);
+  font-size: var(--cp-size-sm);
+  padding: var(--cp-space-1);
+}
+
+/* ---------- Badges (status) ---------- */
+.cp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--cp-size-2xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 4px var(--cp-space-2);
+  border-radius: 999px;
+}
+
+.cp-badge-signal {
+  background: var(--cp-signal-100);
+  color: var(--cp-signal-900);
+}
+
+.cp-badge-aura {
+  background: var(--cp-aura-100);
+  color: var(--cp-aura-700);
+}
+
+.cp-badge-flag {
+  background: var(--cp-flag-100);
+  color: var(--cp-flag-700);
+}
+
+.cp-badge-danger {
+  background: var(--cp-danger-100);
+  color: var(--cp-danger-700);
+}
+
+.cp-badge-neutral {
+  background: var(--cp-surface-sunken);
+  color: var(--cp-ink-500);
+}
+
+/* ---------- Tabs ---------- */
+.cp-tabs {
+  display: flex;
+  gap: var(--cp-space-1);
+  border-bottom: 1px solid var(--cp-border);
+  margin-bottom: var(--cp-space-5);
+}
+
+.cp-tab {
+  background: none;
+  border: none;
+  padding: var(--cp-space-3) var(--cp-space-4);
+  font-size: var(--cp-size-sm);
+  font-weight: 600;
+  color: var(--cp-ink-500);
+  cursor: pointer;
+  position: relative;
+  top: 1px;
+}
+
+.cp-tab.is-active {
+  color: var(--cp-ink-900);
+  border-bottom: 2px solid var(--cp-signal-500);
+}
+
+/* ---------- Meter (profile completion) ---------- */
+.cp-meter-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--cp-surface-sunken);
+  overflow: hidden;
+}
+
+.cp-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cp-signal-500), var(--cp-signal-700));
+  border-radius: 999px;
+  transition: width 0.4s var(--cp-ease);
+}
+
+/* ---------- Empty state ---------- */
+.cp-empty {
+  text-align: center;
+  padding: var(--cp-space-7) var(--cp-space-5);
+  color: var(--cp-ink-500);
+}
+
+.cp-empty-title {
+  font-family: var(--cp-font-display);
+  font-size: var(--cp-size-lg);
+  color: var(--cp-ink-900);
+  margin: var(--cp-space-3) 0 var(--cp-space-1);
+}
+
+/* ---------- Toast ---------- */
+.cp-toast {
+  position: fixed;
+  bottom: var(--cp-space-5);
+  right: var(--cp-space-5);
+  background: var(--cp-ink-900);
+  color: #fff;
+  padding: var(--cp-space-3) var(--cp-space-5);
+  border-radius: var(--cp-radius-sm);
+  box-shadow: var(--cp-shadow-lg);
+  font-size: var(--cp-size-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--cp-space-2);
+  z-index: 80;
+  animation: cp-toast-in 0.25s var(--cp-ease);
+}
+
+@keyframes cp-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cp-toast-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cp-signal-500);
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-toast {
+    animation: none;
+  }
+}

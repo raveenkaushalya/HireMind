@@ -1,0 +1,224 @@
+.cp-shell {
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  min-height: 100vh;
+  background: var(--cp-bg);
+  font-family: var(--cp-font-body);
+  color: var(--cp-ink-900);
+}
+
+@media (max-width: 900px) {
+  .cp-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Sidebar ---------- */
+.cp-sidebar {
+  background: var(--cp-ink-900);
+  color: #fff;
+  padding: var(--cp-space-5) var(--cp-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cp-space-6);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .cp-sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--cp-space-3) var(--cp-space-4);
+  }
+  .cp-sidebar-nav {
+    display: none;
+  }
+}
+
+.cp-brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cp-space-2);
+}
+
+.cp-brand-mark {
+  font-family: var(--cp-font-display);
+  font-size: var(--cp-size-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.cp-brand-tag {
+  font-family: var(--cp-font-mono);
+  font-size: var(--cp-size-2xs);
+  color: var(--cp-signal-500);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cp-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cp-space-1);
+  flex: 1;
+}
+
+.cp-nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--cp-space-3);
+  padding: var(--cp-space-3) var(--cp-space-3);
+  border-radius: var(--cp-radius-sm);
+  color: rgba(255, 255, 255, 0.72);
+  text-decoration: none;
+  font-size: var(--cp-size-sm);
+  transition: background 0.15s var(--cp-ease), color 0.15s var(--cp-ease);
+}
+
+.cp-nav-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.cp-nav-link.is-active {
+  background: rgba(31, 157, 117, 0.16);
+  color: #fff;
+}
+
+.cp-nav-link.is-active .cp-nav-dot {
+  background: var(--cp-signal-500);
+}
+
+.cp-nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+
+.cp-sidebar-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--cp-space-3);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: var(--cp-space-4);
+}
+
+.cp-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--cp-signal-500);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--cp-font-display);
+  font-weight: 600;
+  font-size: var(--cp-size-sm);
+  flex-shrink: 0;
+}
+
+.cp-sidebar-foot-name {
+  font-size: var(--cp-size-xs);
+  font-weight: 600;
+}
+
+.cp-sidebar-foot-meta {
+  font-size: var(--cp-size-2xs);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ---------- Main column ---------- */
+.cp-main {
+  padding: var(--cp-space-6) var(--cp-space-7);
+  max-width: 1180px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .cp-main {
+    padding: var(--cp-space-4);
+  }
+}
+
+.cp-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--cp-space-4);
+  margin-bottom: var(--cp-space-6);
+  flex-wrap: wrap;
+}
+
+.cp-eyebrow {
+  font-family: var(--cp-font-mono);
+  font-size: var(--cp-size-2xs);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--cp-signal-700);
+  margin: 0 0 var(--cp-space-2);
+}
+
+.cp-page-title {
+  font-family: var(--cp-font-display);
+  font-size: var(--cp-size-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--cp-ink-900);
+}
+
+.cp-page-sub {
+  font-size: var(--cp-size-sm);
+  color: var(--cp-ink-500);
+  margin: var(--cp-space-2) 0 0;
+  max-width: 56ch;
+}
+
+.cp-card {
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-border);
+  border-radius: var(--cp-radius-md);
+  box-shadow: var(--cp-shadow-sm);
+}
+
+.cp-section {
+  margin-bottom: var(--cp-space-6);
+}
+
+.cp-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--cp-space-5);
+}
+
+.cp-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--cp-space-4);
+}
+
+@media (max-width: 900px) {
+  .cp-grid-2,
+  .cp-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* focus visibility, kept consistent across the portal */
+.cp-shell a:focus-visible,
+.cp-shell button:focus-visible,
+.cp-shell input:focus-visible,
+.cp-shell textarea:focus-visible,
+.cp-shell select:focus-visible,
+.cp-shell [tabindex]:focus-visible {
+  outline: 2px solid var(--cp-signal-500);
+  outline-offset: 2px;
+}
