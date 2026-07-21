@@ -1,7 +1,6 @@
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import HomePage from './pages/public/HomePage';
-import ContactPage from './pages/public/ContactPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import CandidateDashboard from './pages/candidate/CandidateDashboard';
@@ -12,6 +11,7 @@ import CompanyDashboard from './pages/company/CompanyDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminLogin from './pages/auth/AdminLogin';
 import CompanySetupPassword from './pages/auth/CompanySetupPassword';
+import Contact from './components/Contact';
 
 function AppContent() {
   const { currentPage, userRole, signOut, openRoleDashboard } = useAuth();
@@ -29,7 +29,7 @@ function AppContent() {
   if (currentPage === 'login') return <LoginPage />;
   if (currentPage === 'register') return <RegisterPage />;
   if (currentPage === 'jobs') return <JobsPage />;
-  if (currentPage === 'contact') return <ContactPage />;
+  if (currentPage === 'contact') return <Contact />;
   if (currentPage === 'candidate_dashboard') return <CandidateDashboard />;
   if (currentPage === 'recruiter_dashboard') {
     return <RecruiterDashboard onLogout={signOut} onSwitch={switchRecruitmentRole} />;
