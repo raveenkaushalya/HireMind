@@ -50,7 +50,7 @@ export default function About() {
           <div className="relative order-2 lg:order-1">
             <div className="relative rounded-3xl overflow-hidden shadow-2xl">
               <img
-                src="https://images.pexels.com/photos/9301835/pexels-photo-9301835.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=720&w=900"
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTryVPR87NKJ6LZl8LyaUIrX9-tYHpe7TS8Dur-oz9zDGWJeZ1aldeJpDDx&s=10"
                 alt="Our team collaborating"
                 className="w-full h-[460px] object-cover"
               />

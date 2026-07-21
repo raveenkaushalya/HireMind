@@ -1,4 +1,5 @@
 import { useTheme } from '../context/ThemeContext';
+import { useEffect, useRef, useState } from 'react';
 
 const stats = [
   { value: '2M+', label: 'Active Candidates', description: 'Verified professionals' },
@@ -6,6 +7,49 @@ const stats = [
   { value: '500K+', label: 'Jobs Matched', description: 'By our AI engine' },
   { value: '96%', label: 'Match Accuracy', description: 'AI-powered precision' },
 ];
+
+function AnimatedStat({ value }: { value: string }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const numericValue = parseInt(value.replace(/[^0-9]/g, ''), 10);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          let start = 0;
+          const duration = 1800;
+          const increment = numericValue / (duration / 16);
+
+          const timer = setInterval(() => {
+            start += increment;
+            if (start >= numericValue) {
+              setCount(numericValue);
+              clearInterval(timer);
+            } else {
+              setCount(Math.floor(start));
+            }
+          }, 16);
+
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [value]);
+
+  const suffix = value.includes('%') ? '%' : value.includes('M+') ? 'M+' : value.includes('K+') ? 'K+' : '+';
+
+  return <span ref={ref}>{count}{suffix}</span>;
+}
 
 export default function Stats() {
   const { theme } = useTheme();
@@ -39,7 +83,7 @@ export default function Stats() {
                     ? 'bg-gradient-to-r from-white to-primary-200 bg-clip-text text-transparent'
                     : 'text-white'
                 }`}>
-                  {stat.value}
+                  <AnimatedStat value={stat.value} />
                 </p>
                 <p className={`font-semibold text-sm sm:text-base mb-1 ${
                   isDark ? 'text-surface-200' : 'text-white/90'
