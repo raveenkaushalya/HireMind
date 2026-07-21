@@ -1,56 +1,48 @@
 import { useTheme } from '../context/ThemeContext';
-import { 
-  BrainCircuit, FileSearch, Target, Zap, Shield, BarChart3, 
-  ArrowRight 
+import {
+  Trophy,
+  FileCheck,
+  Target,
+  Zap,
+  ShieldCheck,
+  BarChart3,
 } from 'lucide-react';
 
 const features = [
   {
-    icon: BrainCircuit,
+    icon: Trophy,
     title: 'AI Candidate Scoring',
     description: 'Our AI analyzes candidate profiles against job requirements, providing a comprehensive compatibility score from 0-100 with detailed breakdowns.',
-    gradient: 'from-violet-500 to-purple-600',
-    shadow: 'shadow-violet-500/25',
     highlight: '96% accuracy',
   },
   {
-    icon: FileSearch,
+    icon: FileCheck,
     title: 'Smart Resume Matching',
     description: 'Upload job descriptions and let our AI instantly match and rank the best-fit candidates from your talent pool using NLP and deep learning.',
-    gradient: 'from-blue-500 to-cyan-500',
-    shadow: 'shadow-blue-500/25',
     highlight: '10x faster',
   },
   {
     icon: Target,
     title: 'Precision Job Search',
     description: 'Our advanced algorithm considers skills, experience, culture fit, and career goals to surface the most relevant opportunities for candidates.',
-    gradient: 'from-emerald-500 to-teal-500',
-    shadow: 'shadow-emerald-500/25',
     highlight: '85% match rate',
   },
   {
     icon: Zap,
     title: 'Instant Screening',
     description: 'Automate initial candidate screening with AI-powered assessments that evaluate technical skills, soft skills, and cultural alignment.',
-    gradient: 'from-amber-500 to-orange-500',
-    shadow: 'shadow-amber-500/25',
     highlight: '70% time saved',
   },
   {
-    icon: Shield,
+    icon: ShieldCheck,
     title: 'Bias-Free Hiring',
     description: 'Our AI is designed to reduce unconscious bias in the hiring process, focusing purely on skills and qualifications for fair evaluation.',
-    gradient: 'from-rose-500 to-pink-500',
-    shadow: 'shadow-rose-500/25',
     highlight: 'DEI focused',
   },
   {
     icon: BarChart3,
     title: 'Recruitment Analytics',
     description: 'Get deep insights into your hiring pipeline with real-time dashboards, conversion metrics, and AI-powered recommendations.',
-    gradient: 'from-indigo-500 to-blue-600',
-    shadow: 'shadow-indigo-500/25',
     highlight: 'Real-time data',
   },
 ];
@@ -102,20 +94,28 @@ export default function Features() {
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className={`group relative rounded-2xl p-6 lg:p-8 transition-all duration-500 hover:-translate-y-1 ${
+              className={`group relative rounded-2xl p-7 lg:p-8 transition-all duration-300 hover:-translate-y-1 ${
                 isDark
-                  ? 'bg-surface-800/50 border border-surface-700/50 hover:border-surface-600/80 hover:bg-surface-800/80'
-                  : 'bg-white border border-surface-200 hover:border-surface-300 hover:shadow-xl hover:shadow-surface-200/50'
+                  ? 'bg-surface-800/40 border border-surface-700 hover:border-primary-500/40 hover:bg-surface-800/70 hover:shadow-lg hover:shadow-primary-500/10'
+                  : 'bg-white border border-surface-200 hover:border-primary-300 hover:shadow-xl'
               }`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Icon */}
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 shadow-lg ${feature.shadow} group-hover:scale-110 transition-transform duration-300`}>
-                <feature.icon className="w-7 h-7 text-white" />
+              <div className={`mb-6 flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 ${
+                isDark
+                  ? 'bg-surface-700/60 border border-surface-600 group-hover:border-primary-500/40'
+                  : 'bg-surface-100 border border-surface-200'
+              }`}>
+                <feature.icon
+                  className={`w-6 h-6 ${
+                    isDark ? 'text-primary-400' : 'text-primary-600'
+                  }`}
+                />
               </div>
 
               {/* Highlight Badge */}
-              <div className={`inline-flex px-3 py-1 rounded-full text-xs font-bold mb-4 ${
+              <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold mb-5 ${
                 isDark
                   ? 'bg-primary-300/10 text-primary-300 border border-primary-300/20'
                   : 'bg-primary-50 text-primary-600 border border-primary-200'
@@ -124,24 +124,19 @@ export default function Features() {
               </div>
 
               {/* Content */}
-              <h3 className={`font-display text-xl font-bold mb-3 ${
+              <h3 className={`text-xl font-semibold tracking-tight mb-3 ${
                 isDark ? 'text-white' : 'text-surface-900'
               }`}>
                 {feature.title}
               </h3>
-              <p className={`text-sm leading-relaxed mb-5 ${
+              <p className={`text-sm leading-7 ${
                 isDark ? 'text-surface-400' : 'text-surface-500'
               }`}>
                 {feature.description}
               </p>
 
-              {/* Link */}
-              <a href="#" className={`inline-flex items-center gap-2 text-sm font-semibold group/link ${
-                isDark ? 'text-primary-400 hover:text-primary-300' : 'text-primary-600 hover:text-primary-700'
-              }`}>
-                Learn more
-                <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
-              </a>
+            
+              
             </div>
           ))}
         </div>
