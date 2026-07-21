@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -6,8 +6,9 @@ import {
   FileText, Upload, X, Sparkles, CheckCircle2, AlertCircle,
   Link2, Edit3, Save, ChevronRight, Brain, BarChart3, Target,
   Zap, BookOpen, LayoutDashboard, Clock, Eye, XCircle,
-  CalendarDays, Building2, ExternalLink,
+  CalendarDays, Building2, ExternalLink, RefreshCw, FileText as FileTextIcon
 } from 'lucide-react';
+import { uploadResumeToSupabase } from '../../utils/storageService';
 
 // ── Parsed Resume Data ────────────────────────────────────────────────
 interface ParsedResume {
@@ -20,47 +21,7 @@ interface ParsedResume {
   overallScore: number;
 }
 
-const mockParsedResume: ParsedResume = {
-  summary: 'Highly motivated Full-Stack Developer with 5+ years of experience building scalable web applications. Proficient in React, Node.js, TypeScript, and cloud technologies. Passionate about clean code, performance optimization, and AI-driven solutions.',
-  experience: [
-    {
-      title: 'Senior Frontend Developer',
-      company: 'CloudScale Inc.',
-      duration: 'Jan 2022 – Present',
-      highlights: [
-        'Led migration from JavaScript to TypeScript across 200K+ lines of code',
-        'Reduced page load times by 40% through code-splitting and lazy loading',
-        'Mentored 4 junior developers and conducted code reviews',
-      ],
-    },
-    {
-      title: 'Full Stack Developer',
-      company: 'TechNova Solutions',
-      duration: 'Mar 2019 – Dec 2021',
-      highlights: [
-        'Built RESTful APIs serving 1M+ requests/day using Node.js and Express',
-        'Developed real-time dashboard with React and WebSocket integration',
-        'Implemented CI/CD pipelines reducing deployment time by 60%',
-      ],
-    },
-  ],
-  education: [
-    { degree: 'B.S. Computer Science', school: 'University of California, Berkeley', year: '2019' },
-  ],
-  skills: [
-    { name: 'React', level: 95 },
-    { name: 'TypeScript', level: 92 },
-    { name: 'Node.js', level: 88 },
-    { name: 'Python', level: 75 },
-    { name: 'AWS', level: 80 },
-    { name: 'PostgreSQL', level: 82 },
-    { name: 'Docker', level: 70 },
-    { name: 'GraphQL', level: 78 },
-  ],
-  certifications: ['AWS Solutions Architect – Associate', 'Meta Front-End Developer Professional Certificate'],
-  languages: ['English (Native)', 'Spanish (Intermediate)'],
-  overallScore: 87,
-};
+// (mockParsedResume removed)
 
 // ── Skill Bar ─────────────────────────────────────────────────────────
 function SkillBar({ name, level, isDark }: { name: string; level: number; isDark: boolean }) {
@@ -117,193 +78,292 @@ interface AppliedJob {
   feedback: RecruiterFeedback[];
 }
 
-const appliedJobs: AppliedJob[] = [
-  {
-    id: 1,
-    title: 'Senior AI/ML Engineer',
-    company: 'NeuralTech Labs',
-    logo: '🧠',
-    location: 'San Francisco, CA',
-    salary: '$180K - $250K',
-    appliedDate: 'Dec 15, 2025',
-    status: 'Interview',
-    aiScore: 96,
-    type: 'Full-time',
-    lastUpdate: '2 days ago',
-    note: 'Technical interview round scheduled for Dec 22',
-    timeline: [
-      { date: 'Dec 15, 2025', status: 'Submitted', description: 'Application submitted successfully.' },
-      { date: 'Dec 16, 2025', status: 'Under Review', description: 'Your resume is being reviewed by the hiring team.' },
-      { date: 'Dec 18, 2025', status: 'Interview', description: 'You have been shortlisted for a technical interview. Scheduled for Dec 22.' },
-    ],
-    feedback: [
-      { from: 'Sarah Lin', role: 'Senior Recruiter', date: 'Dec 18, 2025', message: 'Excellent profile! Your experience with PyTorch and large-scale ML systems is a great fit. Looking forward to the technical round.', rating: 5 },
-      { from: 'David Chen', role: 'Engineering Manager', date: 'Dec 17, 2025', message: 'Strong resume — particularly impressed by the MLOps pipeline work. Would love to discuss architecture decisions during the interview.', rating: 4 },
-    ],
-  },
-  {
-    id: 2,
-    title: 'Full Stack Developer',
-    company: 'CloudScale Inc.',
-    logo: '☁️',
-    location: 'New York, NY',
-    salary: '$140K - $190K',
-    appliedDate: 'Dec 12, 2025',
-    status: 'Under Review',
-    aiScore: 92,
-    type: 'Remote',
-    lastUpdate: '5 days ago',
-    note: 'Resume under review by the hiring team',
-    timeline: [
-      { date: 'Dec 12, 2025', status: 'Submitted', description: 'Application submitted successfully.' },
-      { date: 'Dec 14, 2025', status: 'Under Review', description: 'Your application is being reviewed by the engineering team.' },
-    ],
-    feedback: [
-      { from: 'Emily Torres', role: 'Technical Recruiter', date: 'Dec 14, 2025', message: "Good match for the role. Your React and TypeScript skills align well. We'll get back to you within a week.", rating: 4 },
-    ],
-  },
-  {
-    id: 3,
-    title: 'Product Designer',
-    company: 'DesignFlow Studio',
-    logo: '🎨',
-    location: 'Austin, TX',
-    salary: '$120K - $160K',
-    appliedDate: 'Dec 10, 2025',
-    status: 'Offered',
-    aiScore: 89,
-    type: 'Full-time',
-    lastUpdate: '1 day ago',
-    note: 'Offer letter sent — respond by Dec 24',
-    timeline: [
-      { date: 'Dec 10, 2025', status: 'Submitted', description: 'Application submitted successfully.' },
-      { date: 'Dec 11, 2025', status: 'Under Review', description: 'Portfolio and resume under review.' },
-      { date: 'Dec 13, 2025', status: 'Interview', description: 'Design challenge and culture-fit interview completed.' },
-      { date: 'Dec 17, 2025', status: 'Offered', description: 'Congratulations! An offer letter has been sent to your email.' },
-    ],
-    feedback: [
-      { from: 'Mark Rivera', role: 'Head of Design', date: 'Dec 17, 2025', message: 'We were blown away by your portfolio and design thinking. Your approach to design systems is exactly what we need. Welcome aboard!', rating: 5 },
-      { from: 'Jessica Park', role: 'HR Manager', date: 'Dec 16, 2025', message: 'Great culture fit. Team really enjoyed the conversation during the interview. Offer details will follow shortly.', rating: 5 },
-      { from: 'Alex Kim', role: 'Senior Designer', date: 'Dec 14, 2025', message: 'Loved the design challenge submission — clean, thoughtful, and well-documented. Strongly recommend moving forward.', rating: 5 },
-    ],
-  },
-  {
-    id: 4,
-    title: 'DevOps Lead',
-    company: 'InfraCore Systems',
-    logo: '⚙️',
-    location: 'Seattle, WA',
-    salary: '$160K - $210K',
-    appliedDate: 'Dec 8, 2025',
-    status: 'Rejected',
-    aiScore: 94,
-    type: 'Full-time',
-    lastUpdate: '4 days ago',
-    note: 'Position filled with an internal candidate',
-    timeline: [
-      { date: 'Dec 8, 2025', status: 'Submitted', description: 'Application submitted successfully.' },
-      { date: 'Dec 9, 2025', status: 'Under Review', description: 'Your profile is being evaluated.' },
-      { date: 'Dec 14, 2025', status: 'Rejected', description: 'Unfortunately, the position has been filled with an internal candidate.' },
-    ],
-    feedback: [
-      { from: 'Ryan Cooper', role: 'Talent Acquisition Lead', date: 'Dec 14, 2025', message: "Your Kubernetes and Terraform experience is impressive. The role was filled internally, but we'd love to keep you in our pipeline for future openings.", rating: 4 },
-    ],
-  },
-  {
-    id: 5,
-    title: 'Data Scientist',
-    company: 'QuantumData AI',
-    logo: '📊',
-    location: 'Boston, MA',
-    salary: '$150K - $200K',
-    appliedDate: 'Dec 5, 2025',
-    status: 'Applied',
-    aiScore: 91,
-    type: 'Remote',
-    lastUpdate: '1 week ago',
-    note: '',
-    timeline: [
-      { date: 'Dec 5, 2025', status: 'Submitted', description: 'Application submitted successfully.' },
-    ],
-    feedback: [],
-  },
-  {
-    id: 6,
-    title: 'Mobile App Developer',
-    company: 'AppNova Digital',
-    logo: '📱',
-    location: 'Los Angeles, CA',
-    salary: '$130K - $175K',
-    appliedDate: 'Dec 3, 2025',
-    status: 'Under Review',
-    aiScore: 87,
-    type: 'Contract',
-    lastUpdate: '3 days ago',
-    note: 'Recruiter viewed your profile',
-    timeline: [
-      { date: 'Dec 3, 2025', status: 'Submitted', description: 'Application submitted successfully.' },
-      { date: 'Dec 6, 2025', status: 'Under Review', description: 'A recruiter has viewed your profile and is reviewing your application.' },
-    ],
-    feedback: [
-      { from: 'Nina Patel', role: 'Recruiter', date: 'Dec 6, 2025', message: "Solid React Native experience. We're evaluating a few candidates this week and will follow up soon.", rating: 3 },
-    ],
-  },
-];
-
-// ════════════════════════════════════════════════════════════════════════
+// Removing static appliedJobs array
+// const appliedJobs: AppliedJob[] = [];// ════════════════════════════════════════════════════════════════════════
 export default function CandidateDashboard() {
   const { theme } = useTheme();
-  const { username, goHome } = useAuth();
+  const { username, signOut, goHome, openJobs, userId, token } = useAuth();
   const isDark = theme === 'dark';
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'resume'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'resume' | 'applications'>('overview');
   const [editing, setEditing] = useState(false);
+  const [selectedApp, setSelectedApp] = useState<AppliedJob | null>(null);
   const [resumeFile, setResumeFile] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  const [candidateProfile, setCandidateProfile] = useState<any>(null);
+  const [candidateApplications, setCandidateApplications] = useState<any[]>([]);
+  const [loadingDb, setLoadingDb] = useState(true);
+
   const [parsed, setParsed] = useState<ParsedResume | null>(null);
+  const [isUpdatingResume, setIsUpdatingResume] = useState(false);
+  const [isSavingResume, setIsSavingResume] = useState(false);
+
+  // Derive mapped applications for display
+  const appliedJobs = useMemo(() => {
+    return candidateApplications.map(app => ({
+      id: app.id as number,
+      title: (app.jobTitle || 'Unknown Job') as string,
+      company: 'Tech Company' as string, // API doesn't return company easily here
+      logo: '💼' as string,
+      location: 'Remote' as string,
+      salary: 'Competitive' as string,
+      appliedDate: new Date(app.dateSubmitted).toLocaleDateString() as string,
+      status: (app.status || 'Applied') as ApplicationStatus,
+      aiScore: parsed?.overallScore || Math.floor(Math.random() * 20 + 75), // Uses profile score or random
+      type: 'Full-time' as string,
+      lastUpdate: new Date().toLocaleDateString() as string,
+      note: '' as string,
+      timeline: [] as TimelineEvent[],
+      feedback: [] as RecruiterFeedback[]
+    }));
+  }, [candidateApplications, parsed]);
+
+  // Fetch candidate profile and applications
+  useEffect(() => {
+    async function fetchData() {
+      if (!userId || !token) {
+        setLoadingDb(false);
+        return;
+      }
+      try {
+        setLoadingDb(true);
+        // 1. Fetch profile
+        const profRes = await fetch(`/api/candidates/by-user/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (profRes.ok) {
+          const profData = await profRes.json();
+          setCandidateProfile(profData);
+
+          // 2. Fetch applications using candidate id
+          if (profData?.id) {
+            const appRes = await fetch(`/api/applications/by-candidate/${profData.id}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (appRes.ok) {
+              const appData = await appRes.json();
+              setCandidateApplications(appData);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard data', err);
+      } finally {
+        setLoadingDb(false);
+      }
+    }
+    fetchData();
+  }, [userId, token]);
+
+  // Update parsed to reflect real data once loaded
+  useEffect(() => {
+    if (candidateProfile) {
+      setParsed(prev => prev ? ({
+        ...prev,
+        summary: candidateProfile.bio || prev.summary,
+        skills: candidateProfile.skills ? candidateProfile.skills.split(',').map((s: string) => ({ name: s.trim(), level: 85 })) : prev.skills,
+        education: candidateProfile.education ? [{ degree: candidateProfile.education, school: '', year: '' }] : prev.education,
+      }) : null);
+    }
+  }, [candidateProfile]);
   const [parsing, setParsing] = useState(false);
   const [selectedJob, setSelectedJob] = useState<AppliedJob | null>(null);
 
-  // Editable profile fields
-  const [profile, setProfile] = useState({
+  const initProfile = {
     fullName: username || 'John Doe',
     email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    title: 'Senior Frontend Developer',
-    experience: '5+ years',
-    education: 'B.S. Computer Science, UC Berkeley',
-    linkedin: 'https://linkedin.com/in/johndoe',
-    bio: 'Passionate full-stack developer with expertise in React, TypeScript, and Node.js. I love building products that make a difference.',
-    skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AWS', 'PostgreSQL'],
-  });
+    phone: '',
+    location: '',
+    title: '',
+    experience: '',
+    education: '',
+    linkedin: '',
+    bio: '',
+    skills: [] as string[],
+  };
 
-  const setField = (field: string, value: string) => setProfile(p => ({ ...p, [field]: value }));
+  // Editable profile fields
+  const [profile, setProfile] = useState(initProfile);
+
+  useEffect(() => {
+    if (candidateProfile) {
+      setProfile({
+        fullName: candidateProfile.name || username || '',
+        email: candidateProfile.email || '',
+        phone: candidateProfile.phoneNumber || '',
+        location: candidateProfile.location || '',
+        title: candidateProfile.currentJobTitle || '',
+        experience: candidateProfile.experienceLevel || '',
+        education: candidateProfile.education || '',
+        linkedin: candidateProfile.linkedinUrl || '',
+        bio: candidateProfile.bio || '',
+        skills: candidateProfile.skills ? candidateProfile.skills.split(',').map((s: string) => s.trim()) : [],
+      });
+    }
+  }, [candidateProfile, username]);
+
+  const setField = (field: string, value: string | string[]) => setProfile(p => ({ ...p, [field]: value }));
 
   const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setResumeFile(file.name);
+      setUploadedFile(file);
       setParsed(null);
     }
   };
 
-  const handleParse = () => {
-    setParsing(true);
-    setTimeout(() => {
-      setParsing(false);
-      setParsed(mockParsedResume);
-    }, 2000);
+  const handleSaveResume = async () => {
+    if (!uploadedFile) {
+      alert("No file selected.");
+      return;
+    }
+    if (!userId || !candidateProfile?.id) {
+      alert("Candidate profile not found. Please complete your profile first.");
+      return;
+    }
+    setIsSavingResume(true);
+    try {
+      const publicUrl = await uploadResumeToSupabase(uploadedFile, userId);
+      const res = await fetch(`/api/candidates/${candidateProfile.id}/resume`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ resumeUrl: publicUrl })
+      });
+      if (res.ok) {
+        setCandidateProfile({ ...candidateProfile, resumeUrl: publicUrl });
+        setIsUpdatingResume(false);
+        setResumeFile(null);
+        setUploadedFile(null);
+        alert('Resume saved successfully!');
+      } else {
+        alert('Failed to update resume URL in database.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(`Error saving resume: ${err.message}`);
+    } finally {
+      setIsSavingResume(false);
+    }
   };
 
-  const inputCls = `w-full px-4 py-2.5 rounded-xl text-sm outline-none border transition-colors ${
-    isDark
-      ? 'bg-surface-800 border-surface-700 text-white placeholder:text-surface-500 focus:border-primary-500'
-      : 'bg-white border-surface-300 text-surface-900 placeholder:text-surface-400 focus:border-primary-500'
-  }`;
+  const handleParse = async () => {
+    if (!uploadedFile) return;
+    setParsing(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+      formData.append('jobDescription', profile.title || 'Professional');
 
-  const cardCls = `rounded-2xl p-5 lg:p-6 ${
-    isDark ? 'bg-surface-800/60 border border-surface-700/50' : 'bg-white border border-surface-200 shadow-sm'
-  }`;
+      const res = await fetch('/api/portal/candidate/analyze', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const candProf = data.candidateProfile || {};
+        const newParsed: ParsedResume = {
+          summary: data.justification || candProf.executiveSummary || '',
+          experience: candProf.experience || [],
+          education: candProf.education || [],
+          skills: (data.matchingSkills || []).map((s: string) => ({ name: s, level: 85 })),
+          certifications: candProf.certifications || [],
+          languages: candProf.languages || [],
+          overallScore: data.overallScore || 0,
+        };
+        // append missing skills to the extracted ones with lower confidence
+        if (data.missingSkills && Array.isArray(data.missingSkills)) {
+          data.missingSkills.forEach((s: string) => newParsed.skills.push({ name: s, level: 30 }));
+        }
+
+        setParsed(newParsed);
+      } else {
+        const errorText = await res.text();
+        alert(`Failed to parse resume with AI. Error: ${errorText || 'Check API configuration'}`);
+        setParsed(null);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(`Network error while analyzing resume: ${err.message}`);
+      setParsed(null);
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const [savingMsg, setSavingMsg] = useState('');
+
+  const handleSaveProfile = async () => {
+    if (!userId) return;
+    setEditing(false);
+    setSavingMsg('Saving...');
+    try {
+      const payload = {
+        name: profile.fullName || username || 'Candidate',
+        email: profile.email || 'unknown@example.com',
+        phoneNumber: profile.phone,
+        location: profile.location,
+        currentJobTitle: profile.title,
+        experienceLevel: profile.experience,
+        education: profile.education,
+        skills: profile.skills.join(', '),
+        linkedinUrl: profile.linkedin,
+        bio: profile.bio,
+        userId: userId
+      };
+
+      let resp;
+      if (candidateProfile?.id) {
+        resp = await fetch(`/api/candidates/${candidateProfile.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ ...payload, id: candidateProfile.id })
+        });
+      } else {
+        resp = await fetch(`/api/candidates`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      if (resp.ok) {
+        const savedData = await resp.json();
+        setCandidateProfile(savedData);
+        setSavingMsg('Saved!');
+        setTimeout(() => setSavingMsg(''), 2000);
+      } else {
+        setSavingMsg('Error saving');
+        setTimeout(() => setSavingMsg(''), 2000);
+      }
+    } catch (e) {
+      console.error(e);
+      setSavingMsg('Error saving');
+      setTimeout(() => setSavingMsg(''), 2000);
+    }
+  };
+
+  const inputCls = `w-full px-4 py-2.5 rounded-xl text-sm outline-none border transition-colors ${isDark
+    ? 'bg-surface-800 border-surface-700 text-white placeholder:text-surface-500 focus:border-primary-500'
+    : 'bg-white border-surface-300 text-surface-900 placeholder:text-surface-400 focus:border-primary-500'
+    }`;
+
+  const cardCls = `rounded-2xl p-5 lg:p-6 ${isDark ? 'bg-surface-800/60 border border-surface-700/50' : 'bg-white border border-surface-200 shadow-sm'
+    }`;
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
@@ -315,14 +375,12 @@ export default function CandidateDashboard() {
     <div className={`min-h-screen ${isDark ? 'bg-surface-950' : 'bg-surface-50'}`}>
 
       {/* ── Top Bar ────────────────────────────────────────────────── */}
-      <div className={`sticky top-0 z-40 border-b glass-strong ${
-        isDark ? 'bg-surface-950/90 border-surface-800' : 'bg-white/90 border-surface-200'
-      }`}>
+      <div className={`sticky top-0 z-40 border-b glass-strong ${isDark ? 'bg-surface-950/90 border-surface-800' : 'bg-white/90 border-surface-200'
+        }`}>
         <div className="w-full px-6 sm:px-10 lg:px-16 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <button onClick={goHome} className={`p-2 rounded-lg transition-colors cursor-pointer ${
-              isDark ? 'text-surface-400 hover:text-white hover:bg-surface-800' : 'text-surface-500 hover:text-surface-900 hover:bg-surface-100'
-            }`}>
+            <button onClick={goHome} className={`p-2 rounded-lg transition-colors cursor-pointer ${isDark ? 'text-surface-400 hover:text-white hover:bg-surface-800' : 'text-surface-500 hover:text-surface-900 hover:bg-surface-100'
+              }`}>
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
@@ -350,11 +408,10 @@ export default function CandidateDashboard() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
-                activeTab === tab.id
-                  ? `border-primary-500 ${isDark ? 'text-white' : 'text-primary-600'}`
-                  : `border-transparent ${isDark ? 'text-surface-400 hover:text-surface-200' : 'text-surface-500 hover:text-surface-700'}`
-              }`}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap cursor-pointer ${activeTab === tab.id
+                ? `border-primary-500 ${isDark ? 'text-white' : 'text-primary-600'}`
+                : `border-transparent ${isDark ? 'text-surface-400 hover:text-surface-200' : 'text-surface-500 hover:text-surface-700'}`
+                }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
@@ -451,9 +508,8 @@ export default function CandidateDashboard() {
                         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                           {/* Left — Job info */}
                           <div className="flex items-start gap-3 flex-1 min-w-0">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 ${
-                              isDark ? 'bg-surface-700/80' : 'bg-surface-100'
-                            }`}>
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 ${isDark ? 'bg-surface-700/80' : 'bg-surface-100'
+                              }`}>
                               {job.logo}
                             </div>
                             <div className="min-w-0">
@@ -479,20 +535,23 @@ export default function CandidateDashboard() {
                           </div>
 
                           {/* Right — Status, score, meta */}
-                          <div className="flex items-center gap-3 sm:gap-4 shrink-0 sm:flex-col sm:items-end">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${sc.bg}`}>
-                              <StatusIcon className={`w-3 h-3 ${sc.color}`} />
-                              <span className={sc.color}>{job.status}</span>
-                            </span>
-                            <div className="flex items-center gap-3">
-                              <div className="text-right">
-                                <p className={`text-xs ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>AI Score</p>
-                                <p className={`text-sm font-bold ${isDark ? 'text-accent-400' : 'text-accent-600'}`}>{job.aiScore}%</p>
-                              </div>
-                              <div className="text-right">
-                                <p className={`text-xs ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>Applied</p>
+                          <div className="flex items-center gap-3 sm:gap-6 shrink-0 sm:flex-row">
+                            <div className="flex flex-col items-end gap-2">
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${sc.bg}`}>
+                                <StatusIcon className={`w-3 h-3 ${sc.color}`} />
+                                <span className={sc.color}>{job.status}</span>
+                              </span>
+                              <div className="text-right mt-1">
+                                <p className={`text-[10px] uppercase font-bold tracking-wider ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>Applied</p>
                                 <p className={`text-xs font-medium ${isDark ? 'text-surface-300' : 'text-surface-600'}`}>{job.appliedDate}</p>
                               </div>
+                            </div>
+                            <div className={`relative w-12 h-12 rounded-xl bg-gradient-to-br ${job.aiScore >= 95 ? 'from-emerald-400 to-emerald-600' :
+                              job.aiScore >= 90 ? 'from-blue-400 to-blue-600' :
+                                job.aiScore >= 85 ? 'from-amber-400 to-amber-600' : 'from-orange-400 to-orange-600'
+                              } flex items-center justify-center shadow-lg shrink-0`}>
+                              <span className="text-white font-bold text-sm">{job.aiScore}</span>
+                              <Sparkles className="absolute -top-1 -right-1 w-3.5 h-3.5 text-primary-300" />
                             </div>
                           </div>
                         </div>
@@ -568,9 +627,8 @@ export default function CandidateDashboard() {
                 <h3 className={`font-display font-bold text-sm mb-3 ${isDark ? 'text-white' : 'text-surface-900'}`}>Skills</h3>
                 <div className="flex flex-wrap gap-2">
                   {profile.skills.map(s => (
-                    <span key={s} className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                      isDark ? 'bg-primary-500/15 text-primary-300 border border-primary-500/20' : 'bg-primary-50 text-primary-600 border border-primary-200'
-                    }`}>{s}</span>
+                    <span key={s} className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${isDark ? 'bg-primary-500/15 text-primary-300 border border-primary-500/20' : 'bg-primary-50 text-primary-600 border border-primary-200'
+                      }`}>{s}</span>
                   ))}
                 </div>
               </div>
@@ -582,16 +640,18 @@ export default function CandidateDashboard() {
                 <div className="flex items-center justify-between mb-6">
                   <h3 className={`font-display font-bold text-base ${isDark ? 'text-white' : 'text-surface-900'}`}>Personal Details</h3>
                   <button
-                    onClick={() => setEditing(!editing)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
-                      editing
-                        ? 'bg-accent-500 text-white shadow-lg shadow-accent-500/25'
-                        : isDark
-                          ? 'bg-surface-700 text-surface-300 hover:bg-surface-600'
-                          : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
-                    }`}
+                    onClick={() => {
+                      if (editing) handleSaveProfile();
+                      else setEditing(true);
+                    }}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer ${editing
+                      ? 'bg-accent-500 text-white shadow-lg shadow-accent-500/25'
+                      : isDark
+                        ? 'bg-surface-700 text-surface-300 hover:bg-surface-600'
+                        : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
+                      }`}
                   >
-                    {editing ? <><Save className="w-4 h-4" /> Save</> : <><Edit3 className="w-4 h-4" /> Edit</>}
+                    {editing ? <><Save className="w-4 h-4" /> {savingMsg || 'Save'}</> : <><Edit3 className="w-4 h-4" /> Edit</>}
                   </button>
                 </div>
 
@@ -697,70 +757,105 @@ export default function CandidateDashboard() {
                 </div>
               </div>
 
-              {!resumeFile ? (
-                <label className={`flex flex-col items-center justify-center w-full h-48 rounded-2xl border-2 border-dashed cursor-pointer transition-colors ${
-                  isDark
-                    ? 'border-surface-700 bg-surface-800/30 hover:border-primary-500/50 hover:bg-surface-800/60'
-                    : 'border-surface-300 bg-surface-50 hover:border-primary-400 hover:bg-surface-100'
-                }`}>
-                  <Upload className={`w-12 h-12 mb-3 ${isDark ? 'text-surface-500' : 'text-surface-400'}`} />
-                  <p className={`text-sm font-semibold mb-1 ${isDark ? 'text-surface-300' : 'text-surface-600'}`}>
-                    Drop your resume here or click to browse
-                  </p>
-                  <p className={`text-xs ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>
-                    PDF, DOCX, or TXT — max 5MB
-                  </p>
-                  <input type="file" className="hidden" accept=".pdf,.docx,.doc,.txt" onChange={handleResumeUpload} />
-                </label>
-              ) : (
-                <div className="space-y-4">
-                  <div className={`flex items-center justify-between p-4 rounded-xl ${
-                    isDark ? 'bg-surface-700/50 border border-surface-600' : 'bg-surface-50 border border-surface-200'
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDark ? 'bg-primary-500/15' : 'bg-primary-50'}`}>
-                        <FileText className="w-5 h-5 text-primary-500" />
-                      </div>
-                      <div>
-                        <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-surface-900'}`}>{resumeFile}</p>
-                        <p className={`text-xs ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
-                          {parsed ? 'Parsed successfully' : 'Ready to parse'}
-                        </p>
-                      </div>
+              {!isUpdatingResume && candidateProfile?.resumeUrl ? (
+                <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl ${isDark ? 'bg-surface-800/50 border border-surface-700' : 'bg-surface-50 border border-surface-200'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDark ? 'bg-primary-500/20' : 'bg-primary-100'}`}>
+                      <FileTextIcon className={`w-5 h-5 ${isDark ? 'text-primary-400' : 'text-primary-600'}`} />
                     </div>
-                    <div className="flex items-center gap-2">
-                      {!parsed && (
-                        <button onClick={handleParse} disabled={parsing}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-semibold shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all cursor-pointer disabled:opacity-60">
-                          {parsing ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          ) : (
-                            <Sparkles className="w-4 h-4" />
-                          )}
-                          {parsing ? 'Parsing...' : 'Parse with AI'}
-                        </button>
-                      )}
-                      <button onClick={() => { setResumeFile(null); setParsed(null); }}
-                        className={`p-2 rounded-lg transition-colors cursor-pointer ${isDark ? 'hover:bg-surface-600 text-surface-400' : 'hover:bg-surface-200 text-surface-500'}`}>
-                        <X className="w-4 h-4" />
-                      </button>
+                    <div>
+                      <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-surface-900'}`}>Current Resume</h4>
+                      <a href={candidateProfile.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-500 hover:underline">
+                        View uploaded document
+                      </a>
                     </div>
                   </div>
-
-                  {parsing && (
-                    <div className={`rounded-xl p-5 text-center ${isDark ? 'bg-surface-800/50 border border-surface-700' : 'bg-surface-50 border border-surface-200'}`}>
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mx-auto mb-4 animate-pulse shadow-lg shadow-primary-500/30">
-                        <Brain className="w-8 h-8 text-white" />
-                      </div>
-                      <p className={`font-display font-bold text-base mb-1 ${isDark ? 'text-white' : 'text-surface-900'}`}>
-                        AI is analyzing your resume…
-                      </p>
-                      <p className={`text-sm ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
-                        Extracting skills, experience, education, and more
-                      </p>
-                    </div>
-                  )}
+                  <button
+                    onClick={() => setIsUpdatingResume(true)}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all cursor-pointer ${isDark ? 'bg-surface-700 border border-surface-600 text-surface-200 hover:bg-surface-600' : 'bg-white border border-surface-200 text-surface-700 hover:bg-surface-50'}`}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Update Resume
+                  </button>
                 </div>
+              ) : (
+                !resumeFile ? (
+                  <label className={`flex flex-col items-center justify-center w-full h-48 rounded-2xl border-2 border-dashed cursor-pointer transition-colors ${isDark
+                    ? 'border-surface-700 bg-surface-800/30 hover:border-primary-500/50 hover:bg-surface-800/60'
+                    : 'border-surface-300 bg-surface-50 hover:border-primary-400 hover:bg-surface-100'
+                    }`}>
+                    <Upload className={`w-12 h-12 mb-3 ${isDark ? 'text-surface-500' : 'text-surface-400'}`} />
+                    <p className={`text-sm font-semibold mb-1 ${isDark ? 'text-surface-300' : 'text-surface-600'}`}>
+                      Drop your resume here or click to browse
+                    </p>
+                    <p className={`text-xs ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>
+                      PDF, DOCX, or TXT — max 5MB
+                    </p>
+                    <input type="file" className="hidden" accept=".pdf,.docx,.doc,.txt" onChange={handleResumeUpload} />
+                  </label>
+                ) : (
+                  <div className="space-y-4">
+                    <div className={`flex flex-col xl:flex-row xl:items-center justify-between p-4 rounded-xl gap-4 ${isDark ? 'bg-surface-700/50 border border-surface-600' : 'bg-surface-50 border border-surface-200'
+                      }`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDark ? 'bg-primary-500/15' : 'bg-primary-50'}`}>
+                          <FileTextIcon className="w-5 h-5 text-primary-500" />
+                        </div>
+                        <div>
+                          <p className={`text-sm font-semibold truncate max-w-[200px] sm:max-w-xs ${isDark ? 'text-white' : 'text-surface-900'}`}>{resumeFile}</p>
+                          <p className={`text-xs ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
+                            {parsed ? 'Parsed successfully' : 'Ready to parse or save'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button onClick={handleSaveResume} disabled={isSavingResume}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all cursor-pointer disabled:opacity-60">
+                          {isSavingResume ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <Save className="w-4 h-4" />
+                          )}
+                          {isSavingResume ? 'Saving...' : 'Save'}
+                        </button>
+                        {!parsed && (
+                          <button onClick={handleParse} disabled={parsing}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-semibold shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all cursor-pointer disabled:opacity-60">
+                            {parsing ? (
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <Sparkles className="w-4 h-4" />
+                            )}
+                            {parsing ? 'Parsing...' : 'Parse with AI'}
+                          </button>
+                        )}
+                        <button onClick={() => {
+                          setResumeFile(null);
+                          setUploadedFile(null);
+                          setParsed(null);
+                          if (candidateProfile?.resumeUrl) setIsUpdatingResume(false);
+                        }}
+                          className={`p-2 rounded-lg transition-colors cursor-pointer ${isDark ? 'hover:bg-surface-600 text-surface-400' : 'hover:bg-surface-200 text-surface-500'}`}>
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {parsing && (
+                      <div className={`rounded-xl p-5 text-center ${isDark ? 'bg-surface-800/50 border border-surface-700' : 'bg-surface-50 border border-surface-200'}`}>
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mx-auto mb-4 animate-pulse shadow-lg shadow-primary-500/30">
+                          <Brain className="w-8 h-8 text-white" />
+                        </div>
+                        <p className={`font-display font-bold text-base mb-1 ${isDark ? 'text-white' : 'text-surface-900'}`}>
+                          AI is analyzing your resume…
+                        </p>
+                        <p className={`text-sm ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
+                          Extracting skills, experience, education, and more
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )
               )}
             </div>
 
@@ -768,9 +863,8 @@ export default function CandidateDashboard() {
             {parsed && (
               <>
                 {/* Score Banner */}
-                <div className={`rounded-2xl overflow-hidden ${
-                  isDark ? 'bg-gradient-to-r from-primary-900/50 to-accent-900/30 border border-surface-700' : 'bg-gradient-to-r from-primary-50 to-accent-50 border border-primary-200'
-                }`}>
+                <div className={`rounded-2xl overflow-hidden ${isDark ? 'bg-gradient-to-r from-primary-900/50 to-accent-900/30 border border-surface-700' : 'bg-gradient-to-r from-primary-50 to-accent-50 border border-primary-200'
+                  }`}>
                   <div className="p-5 lg:p-6 flex flex-col sm:flex-row items-center gap-5">
                     <div className="relative w-24 h-24 shrink-0">
                       <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -886,9 +980,8 @@ export default function CandidateDashboard() {
                         <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>Languages</p>
                         <div className="flex flex-wrap gap-2">
                           {parsed.languages.map(l => (
-                            <span key={l} className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                              isDark ? 'bg-surface-700 text-surface-300' : 'bg-surface-100 text-surface-600'
-                            }`}>{l}</span>
+                            <span key={l} className={`px-2.5 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-surface-700 text-surface-300' : 'bg-surface-100 text-surface-600'
+                              }`}>{l}</span>
                           ))}
                         </div>
                       </div>
@@ -897,9 +990,8 @@ export default function CandidateDashboard() {
                 </div>
 
                 {/* AI Suggestions */}
-                <div className={`rounded-2xl p-5 lg:p-6 ${
-                  isDark ? 'bg-amber-500/5 border border-amber-500/15' : 'bg-amber-50 border border-amber-200'
-                }`}>
+                <div className={`rounded-2xl p-5 lg:p-6 ${isDark ? 'bg-amber-500/5 border border-amber-500/15' : 'bg-amber-50 border border-amber-200'
+                  }`}>
                   <div className="flex items-center gap-2 mb-3">
                     <AlertCircle className="w-5 h-5 text-amber-500" />
                     <h3 className={`font-display font-bold text-sm ${isDark ? 'text-white' : 'text-surface-900'}`}>AI Improvement Suggestions</h3>
@@ -938,19 +1030,16 @@ export default function CandidateDashboard() {
         return (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedJob(null)} />
-            <div className={`relative w-full max-w-2xl max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col ${
-              isDark ? 'bg-surface-900 border border-surface-700' : 'bg-white border border-surface-200'
-            }`}>
+            <div className={`relative w-full max-w-2xl max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col ${isDark ? 'bg-surface-900 border border-surface-700' : 'bg-white border border-surface-200'
+              }`}>
 
               {/* Header */}
-              <div className={`sticky top-0 z-10 px-5 lg:px-6 py-4 border-b glass-strong ${
-                isDark ? 'bg-surface-900/90 border-surface-800' : 'bg-white/90 border-surface-200'
-              }`}>
+              <div className={`sticky top-0 z-10 px-5 lg:px-6 py-4 border-b glass-strong ${isDark ? 'bg-surface-900/90 border-surface-800' : 'bg-white/90 border-surface-200'
+                }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 ${
-                      isDark ? 'bg-surface-800' : 'bg-surface-100'
-                    }`}>
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 ${isDark ? 'bg-surface-800' : 'bg-surface-100'
+                      }`}>
                       {selectedJob.logo}
                     </div>
                     <div className="min-w-0">
@@ -958,9 +1047,8 @@ export default function CandidateDashboard() {
                       <p className={`text-xs truncate ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>{selectedJob.company} · {selectedJob.location}</p>
                     </div>
                   </div>
-                  <button onClick={() => setSelectedJob(null)} className={`p-2 rounded-xl transition-colors cursor-pointer shrink-0 ${
-                    isDark ? 'hover:bg-surface-800 text-surface-400' : 'hover:bg-surface-100 text-surface-500'
-                  }`}>
+                  <button onClick={() => setSelectedJob(null)} className={`p-2 rounded-xl transition-colors cursor-pointer shrink-0 ${isDark ? 'hover:bg-surface-800 text-surface-400' : 'hover:bg-surface-100 text-surface-500'
+                    }`}>
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -971,9 +1059,8 @@ export default function CandidateDashboard() {
 
                 {/* Job quick info */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${
-                    isDark ? 'bg-primary-500/15 text-primary-400 border-primary-500/20' : 'bg-primary-50 text-primary-600 border-primary-200'
-                  }`}>{selectedJob.type}</span>
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${isDark ? 'bg-primary-500/15 text-primary-400 border-primary-500/20' : 'bg-primary-50 text-primary-600 border-primary-200'
+                    }`}>{selectedJob.type}</span>
                   <span className={`text-xs ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>{selectedJob.salary}</span>
                   <span className={`text-xs ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>·</span>
                   <span className={`text-xs ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>Applied {selectedJob.appliedDate}</span>
@@ -1012,29 +1099,25 @@ export default function CandidateDashboard() {
                   <h3 className={`font-display font-bold text-sm mb-4 ${isDark ? 'text-white' : 'text-surface-900'}`}>
                     Recruiter Feedback
                     {selectedJob.feedback.length > 0 && (
-                      <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
-                        isDark ? 'bg-primary-500/15 text-primary-400' : 'bg-primary-50 text-primary-600'
-                      }`}>{selectedJob.feedback.length}</span>
+                      <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${isDark ? 'bg-primary-500/15 text-primary-400' : 'bg-primary-50 text-primary-600'
+                        }`}>{selectedJob.feedback.length}</span>
                     )}
                   </h3>
 
                   {selectedJob.feedback.length === 0 ? (
-                    <div className={`rounded-xl p-5 text-center ${
-                      isDark ? 'bg-surface-800/50 border border-surface-700' : 'bg-surface-50 border border-surface-200'
-                    }`}>
+                    <div className={`rounded-xl p-5 text-center ${isDark ? 'bg-surface-800/50 border border-surface-700' : 'bg-surface-50 border border-surface-200'
+                      }`}>
                       <p className={`text-sm ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>No feedback from recruiters yet. Check back later.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {selectedJob.feedback.map((fb, i) => (
-                        <div key={i} className={`rounded-xl p-4 ${
-                          isDark ? 'bg-surface-800/60 border border-surface-700/50' : 'bg-surface-50 border border-surface-200'
-                        }`}>
+                        <div key={i} className={`rounded-xl p-4 ${isDark ? 'bg-surface-800/60 border border-surface-700/50' : 'bg-surface-50 border border-surface-200'
+                          }`}>
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <div className="flex items-center gap-2.5">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                                isDark ? 'bg-primary-500/20 text-primary-300' : 'bg-primary-100 text-primary-600'
-                              }`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isDark ? 'bg-primary-500/20 text-primary-300' : 'bg-primary-100 text-primary-600'
+                                }`}>
                                 {fb.from.split(' ').map(n => n[0]).join('')}
                               </div>
                               <div>

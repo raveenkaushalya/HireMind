@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { CANDIDATES } from '../../data';
+import { useMemo, useState, useEffect } from "react";
+// Removed import of { type Candidate } from '../../data';
+import { useAuth } from "../../context/AuthContext";
 
 // ─────────────────────────── Types ───────────────────────────
 type EntityStatus = "Active" | "Pending" | "Suspended" | "Rejected";
@@ -33,6 +34,7 @@ interface Company {
   website: string;
   location: string;
   size: string;
+  proofUrl?: string;
 }
 
 interface Relationship {
@@ -50,30 +52,6 @@ type Tab = "overview" | "candidates" | "recruiters" | "companies";
 // ─────────────────────────── Constants ───────────────────────────
 const AVATAR_COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981", "#14b8a6", "#0ea5e9"];
 
-const SEED_RECRUITERS: Recruiter[] = [
-  { id: "REC-001", name: "Ava Johnson", email: "ava.j@hireminds.co", role: "Recruiter", status: "Active", assignedCompanyIds: ["CMP-01", "CMP-03"], joinedAt: "2026-02-15", lastActive: "2 min ago", avatar: AVATAR_COLORS[0], phone: "+1 (415) 555-0281", location: "San Francisco, CA" },
-  { id: "REC-002", name: "Marcus Lee", email: "marcus.l@hireminds.co", role: "Recruiter", status: "Active", assignedCompanyIds: ["CMP-02"], joinedAt: "2026-03-02", lastActive: "15 min ago", avatar: AVATAR_COLORS[1], phone: "+1 (310) 555-0142", location: "Los Angeles, CA" },
-  { id: "REC-003", name: "Priya Shah", email: "priya.s@hireminds.co", role: "Recruiter", status: "Active", assignedCompanyIds: ["CMP-01", "CMP-04"], joinedAt: "2026-03-18", lastActive: "1 hr ago", avatar: AVATAR_COLORS[2], phone: "+44 20 7946 0958", location: "London, UK" },
-  { id: "REC-004", name: "Diego Novak", email: "diego.n@hireminds.co", role: "Recruiter", status: "Pending", assignedCompanyIds: [], joinedAt: "2026-04-09", lastActive: "—", avatar: AVATAR_COLORS[3], phone: "+49 30 901 820", location: "Berlin, DE" },
-  { id: "REC-005", name: "Elena Fischer", email: "elena.f@hireminds.co", role: "Hiring Manager", status: "Active", assignedCompanyIds: ["CMP-02", "CMP-03"], joinedAt: "2025-11-20", lastActive: "5 min ago", avatar: AVATAR_COLORS[4], phone: "+65 6271 0980", location: "Singapore, SG" },
-];
-
-const SEED_COMPANIES: Company[] = [
-  { id: "CMP-01", name: "Vertex Systems", industry: "Enterprise SaaS", contact: "Sara Kim", email: "talent@vertexsys.io", status: "Approved", registeredAt: "2026-01-22", recruiterIds: ["REC-001", "REC-003"], applicantsCount: 214, openJobs: 7, website: "vertexsys.io", location: "San Francisco, CA", size: "501-1000 employees" },
-  { id: "CMP-02", name: "Nimbus Labs", industry: "AI Infrastructure", contact: "Tom Osei", email: "jobs@nimbuslabs.ai", status: "Approved", registeredAt: "2026-02-05", recruiterIds: ["REC-002", "REC-005"], applicantsCount: 186, openJobs: 5, website: "nimbuslabs.ai", location: "Austin, TX", size: "201-500 employees" },
-  { id: "CMP-03", name: "Cascade Media", industry: "Content Platform", contact: "Leah Novak", email: "work@cascademedia.com", status: "Pending", registeredAt: "2026-04-10", recruiterIds: [], applicantsCount: 0, openJobs: 2, website: "cascademedia.com", location: "New York, NY", size: "51-200 employees" },
-  { id: "CMP-04", name: "BrightPath Health", industry: "HealthTech", contact: "Ravi Patel", email: "hr@brightpath.health", status: "Pending", registeredAt: "2026-04-12", recruiterIds: [], applicantsCount: 0, openJobs: 4, website: "brightpath.health", location: "Boston, MA", size: "201-500 employees" },
-];
-
-const SEED_RELATIONSHIPS: Relationship[] = [
-  { id: "REL-001", recruiterId: "REC-001", companyId: "CMP-01", candidateId: CANDIDATES[0].id, stage: "Technical", lastTicket: "Interview scheduled" },
-  { id: "REL-002", recruiterId: "REC-001", companyId: "CMP-03", candidateId: CANDIDATES[3].id, stage: "Shortlisted", lastTicket: "Sourced via LinkedIn" },
-  { id: "REL-003", recruiterId: "REC-002", companyId: "CMP-02", candidateId: CANDIDATES[7].id, stage: "Onsite", lastTicket: "Panel stage" },
-  { id: "REL-004", recruiterId: "REC-003", companyId: "CMP-04", candidateId: CANDIDATES[11].id, stage: "Offer", lastTicket: "Offer extended" },
-  { id: "REL-005", recruiterId: "REC-005", companyId: "CMP-02", candidateId: CANDIDATES[15].id, stage: "Phone Screen", lastTicket: "Screening call complete" },
-];
-
-
 // ─────────────────────────── Helpers ───────────────────────────
 const initialsOf = (name: string) => name.split(" ").map((n) => n[0]).join("");
 
@@ -88,9 +66,74 @@ const ROLE_STYLES: Record<Role, string> = {
 export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [search, setSearch] = useState("");
-  const [recruiters, setRecruiters] = useState<Recruiter[]>(SEED_RECRUITERS);
-  const [companies, setCompanies] = useState<Company[]>(SEED_COMPANIES);
-  const [relationships] = useState<Relationship[]>(SEED_RELATIONSHIPS);
+  const [recruiters, setRecruiters] = useState<Recruiter[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [relationships] = useState<Relationship[]>([]);
+  const [candidatesData, setCandidatesData] = useState<any[]>([]);
+
+  const { token } = useAuth();
+  useEffect(() => {
+    if (!token) return;
+
+    // Fetch candidates
+    fetch('/api/candidates', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setCandidatesData(data.map((c: any) => ({
+            id: c.id.toString(),
+            name: c.name || "Unknown Candidate",
+            role: c.currentJobTitle || "Applicant",
+            department: "Engineering",
+            seniority: c.experienceLevel || "Mid",
+            source: "Company Site",
+            stage: "Shortlisted",
+            score: 85,
+            yearsExp: 3,
+            location: c.location || "Remote",
+            appliedAt: new Date().toISOString(),
+            shortlistedAt: new Date().toISOString(),
+            daysInPipeline: 2,
+            status: "Active",
+            avatar: "#10b981",
+            email: c.email || "",
+            phone: c.phoneNumber || "",
+            education: c.education || "",
+            previousCompany: "",
+            expectedSalary: "",
+            noticePeriod: "",
+            skills: c.skills ? c.skills.split(',') : [],
+            summary: c.bio || "",
+            resumeMatch: 90,
+            interviewHistory: []
+          })));
+        }
+      }).catch(console.error);
+
+    // Fetch companies
+    fetch('/api/companies', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setCompanies(data.map((c: any) => ({
+            id: c.id.toString(),
+            name: c.name || "Unknown Company",
+            industry: c.industry || "General",
+            contact: c.contactPersonName || "Unknown",
+            email: c.email || "",
+            status: c.status || "Pending",
+            registeredAt: new Date().toISOString(),
+            recruiterIds: [],
+            applicantsCount: 0,
+            openJobs: 0,
+            website: "",
+            location: c.location || "",
+            size: c.size || "",
+            proofUrl: c.proofDocumentsMetadataLink
+          })));
+        }
+      }).catch(console.error);
+  }, [token]);
 
   // ── Panels ──
   const [panel, setPanel] = useState<{ type: EntityType; id: string | null }>({ type: "company", id: null });
@@ -108,8 +151,43 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const companyById = (id: string | null | undefined) => companies.find((c) => c.id === id);
   const recruiterById = (id: string | null | undefined) => recruiters.find((r) => r.id === id);
 
-  const approveCompany = (id: string) => setCompanies((p) => p.map((c) => (c.id === id ? { ...c, status: "Approved" } : c)));
-  const rejectCompany = (id: string) => setCompanies((p) => p.map((c) => (c.id === id ? { ...c, status: "Rejected" } : c)));
+  const approveCompany = async (id: string) => {
+    try {
+      const res = await fetch(`/api/companies/${id}/approve`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Company formally approved! Token for password setup: ${data.registrationToken}`);
+        setCompanies((p) => p.map((c) => (c.id === id ? { ...c, status: "Approved" } : c)));
+      } else {
+        alert("Failed to approve company: " + await res.text());
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error approving company");
+    }
+  };
+
+  const rejectCompany = async (id: string) => {
+    try {
+      const reason = prompt("Enter reason for rejection:");
+      const res = await fetch(`/api/companies/${id}/reject`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(reason || "No reason provided")
+      });
+      if (res.ok) {
+        setCompanies((p) => p.map((c) => (c.id === id ? { ...c, status: "Rejected" } : c)));
+      } else {
+        alert("Failed to reject company: " + await res.text());
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error rejecting company");
+    }
+  };
 
   const toggleRecruiterStatus = (id: string) =>
     setRecruiters((p) => p.map((r) => (r.id === id ? { ...r, status: r.status === "Active" ? "Suspended" : "Active" } : r)));
@@ -175,7 +253,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   const activeCompany = panel.type === "company" ? companyById(panel.id) : undefined;
   const activeRecruiter = panel.type === "recruiter" ? recruiterById(panel.id) : undefined;
-  const activeCandidate = panel.type === "candidate" ? CANDIDATES.find((c) => c.id === panel.id) : undefined;
+  const activeCandidate = panel.type === "candidate" ? candidatesData.find((c) => c.id === panel.id) : undefined;
   const filteringSearch = search.toLowerCase();
 
   // ─────────────────────────── Render ───────────────────────────
@@ -199,11 +277,10 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                tab === t.id
-                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20"
-                  : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
-              }`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${tab === t.id
+                ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20"
+                : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
+                }`}
             >
               {t.icon}
               {t.label}
@@ -245,9 +322,8 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                tab === t.id ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
-              }`}
+              className={`flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all ${tab === t.id ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
+                }`}
             >
               {t.icon}
               {t.label}
@@ -273,7 +349,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <GlowStat label="Total Candidates" value={CANDIDATES.length} color="#6366f1" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="7" r="4" /><path strokeLinecap="round" d="M2 21v-1a5 5 0 015-5h4a5 5 0 015 5v1" /><path strokeLinecap="round" d="M16 3.13a4 4 0 010 7.75M21 21v-1a5 5 0 00-3-4.58" /></svg>} />
+              <GlowStat label="Total Candidates" value={candidatesData.length} color="#6366f1" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="7" r="4" /><path strokeLinecap="round" d="M2 21v-1a5 5 0 015-5h4a5 5 0 015 5v1" /><path strokeLinecap="round" d="M16 3.13a4 4 0 010 7.75M21 21v-1a5 5 0 00-3-4.58" /></svg>} />
               <GlowStat label="Active Recruiters" value={activeRecruiters} color="#0ea5e9" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2a3 3 0 015.356-1.857m0 0a5 5 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>} />
               <GlowStat label="Pending Companies" value={pendingCompanies} color="#f59e0b" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>} />
               <GlowStat label="Active Relations" value={activeRelations} color="#10b981" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>} />
@@ -309,7 +385,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {CANDIDATES.filter((c) => {
+                  {candidatesData.filter((c) => {
                     if (!filteringSearch) return true;
                     return c.name.toLowerCase().includes(filteringSearch) || c.role.toLowerCase().includes(filteringSearch);
                   }).slice(0, 15).map((c) => (
@@ -497,14 +573,13 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   <button
                     key={s}
                     onClick={() => setCompanyStatusFilter(s)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                      companyStatusFilter === s
-                        ? s === "Approved" ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30"
-                          : s === "Pending" ? "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30"
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${companyStatusFilter === s
+                      ? s === "Approved" ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30"
+                        : s === "Pending" ? "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30"
                           : s === "Rejected" ? "bg-red-500/15 text-red-300 ring-1 ring-inset ring-red-500/30"
-                          : "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20"
-                        : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
-                    }`}
+                            : "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20"
+                      : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
+                      }`}
                   >
                     {s}
                     <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${companyStatusFilter === s ? "bg-white/10" : "bg-slate-800"}`}>{count}</span>
@@ -792,7 +867,7 @@ function EntityDetailPanel({
   type: EntityType;
   company?: Company;
   recruiter?: Recruiter;
-  candidate?: (typeof CANDIDATES)[number];
+  candidate?: any;
   panelTab: "overview" | "edit" | "access" | "password";
   setPanelTab: (v: "overview" | "edit" | "access" | "password") => void;
   recruiters: Recruiter[]; companies: Company[];
@@ -848,146 +923,145 @@ function EntityDetailPanel({
       {/* Centered Modal */}
       <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-6 pointer-events-none">
         <div className="pointer-events-auto w-full sm:max-w-xl max-h-screen sm:max-h-[88vh] bg-slate-900/98 sm:rounded-2xl border border-slate-800/60 shadow-2xl backdrop-blur-xl flex flex-col animate-fadeIn overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/60 bg-slate-900/60 flex-shrink-0">
-          <div>
-            <p className="text-xs font-black uppercase tracking-wider text-slate-500">
-              {type === "company" ? "Client Company" : type === "recruiter" ? "Team Member" : "Candidate"}
-            </p>
-            <h3 className="text-base font-bold truncate max-w-[300px]">
-              {type === "company" ? company?.name : type === "recruiter" ? recruiter?.name : candidate?.name}
-            </h3>
-            <p className="text-[10px] text-slate-500">
-              ID: {type === "company" ? company?.id : type === "recruiter" ? recruiter?.id : candidate?.id}
-            </p>
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/60 bg-slate-900/60 flex-shrink-0">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-slate-500">
+                {type === "company" ? "Client Company" : type === "recruiter" ? "Team Member" : "Candidate"}
+              </p>
+              <h3 className="text-base font-bold truncate max-w-[300px]">
+                {type === "company" ? company?.name : type === "recruiter" ? recruiter?.name : candidate?.name}
+              </h3>
+              <p className="text-[10px] text-slate-500">
+                ID: {type === "company" ? company?.id : type === "recruiter" ? recruiter?.id : candidate?.id}
+              </p>
+            </div>
+            <button onClick={onClose} className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 transition-colors">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
           </div>
-          <button onClick={onClose} className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 transition-colors">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-        </div>
 
-        {/* Tab bar */}
-        <div className="flex gap-1 px-5 py-2 border-b border-slate-800/60 bg-slate-900/60 flex-shrink-0">
-          {panelTabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setPanelTab(t.id)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all capitalize ${
-                panelTab === t.id
+          {/* Tab bar */}
+          <div className="flex gap-1 px-5 py-2 border-b border-slate-800/60 bg-slate-900/60 flex-shrink-0">
+            {panelTabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setPanelTab(t.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all capitalize ${panelTab === t.id
                   ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20"
                   : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
-              }`}
-            >
-              {t.icon}
-              {t.label}
-            </button>
-          ))}
+                  }`}
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-5">
+
+            {/* ─── Company panel ─── */}
+            {type === "company" && company && (
+              <>
+                {panelTab === "overview" && (
+                  <>
+                    <CompanyOverview company={company} recruiters={recruiters} />
+                    {company.status === "Pending" && (
+                      <div className="flex gap-2">
+                        <button onClick={() => onApproveCompany(company.id)} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/20 transition-all">
+                          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          Approve Registration
+                        </button>
+                        <button onClick={() => onRejectCompany(company.id)} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 shadow-lg shadow-rose-500/20 transition-all">
+                          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+                {panelTab === "edit" && (
+                  <CompanyEditForm edit={edit} setEdit={setEdit} editSave={editSave} onSave={handleSave} />
+                )}
+                {panelTab === "access" && (
+                  <CompanyAccess
+                    company={company} recruiters={recruiters}
+                    assignedRecruiterIds={companies.find((c) => c.id === company.id)?.recruiterIds ?? []}
+                    onAssign={(rid) => onAssignCompany(company.id, rid)}
+                    onUnassign={(rid) => onUnassignCompany(company.id, rid)}
+                  />
+                )}
+                {panelTab === "password" && (
+                  <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5 text-center">
+                    <p className="text-xs font-bold text-slate-400">Password management is not available for company accounts.</p>
+                    <p className="text-[10px] text-slate-500 mt-1">Company portal credentials are managed by the company's own admin through their workspace.</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ─── Recruiter panel ─── */}
+            {type === "recruiter" && recruiter && (
+              <>
+                {panelTab === "overview" && (
+                  <>
+                    <RecruiterOverview recruiter={recruiter} />
+                    <button
+                      onClick={() => onToggleRecruiterStatus(recruiter.id)}
+                      className={`w-full py-2.5 rounded-xl text-xs font-bold text-white transition-all ${recruiter.status === "Active" ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-lg shadow-amber-500/20" : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/20"}`}
+                    >
+                      {recruiter.status === "Active" ? "Suspend Portal Access" : "Restore Portal Access"}
+                    </button>
+                  </>
+                )}
+                {panelTab === "edit" && (
+                  <RecruiterEditForm edit={edit} setEdit={setEdit} editSave={editSave} onSave={handleSave} />
+                )}
+                {panelTab === "access" && (
+                  <RecruiterAccess
+                    recruiter={recruiter}
+                    approvedCompanies={companies.filter((c) => c.status === "Approved")}
+                    onAssign={(cid) => onAssignCompany(cid, recruiter.id)}
+                    onUnassign={(cid) => onUnassignCompany(cid, recruiter.id)}
+                  />
+                )}
+                {panelTab === "password" && (
+                  <PasswordPanel pw={pw} setPw={setPw} pwSuccess={pwSuccess} onSubmit={handlePwReset}
+                    title="Reset Recruiter Password" desc="As an admin, you can reset this recruiter's portal password. No current password is required."
+                  />
+                )}
+              </>
+            )}
+
+            {/* ─── Candidate panel ─── */}
+            {type === "candidate" && candidate && (
+              <>
+                {panelTab === "overview" && (
+                  <CandidateOverview candidate={candidate} />
+                )}
+                {panelTab === "edit" && (
+                  <CandidateEditForm edit={edit} setEdit={setEdit} editSave={editSave} onSave={handleSave} />
+                )}
+                {panelTab === "access" && (
+                  <CandidateAccess
+                    candidate={candidate} recruiters={recruiters} companies={companies}
+                    onAssign={(cid) => {
+                      const rec = recruiters.find((r) => r.status === "Active" && r.assignedCompanyIds.includes(cid));
+                      if (rec) onAssignCompany(cid, rec.id);
+                    }}
+                  />
+                )}
+                {panelTab === "password" && (
+                  <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5 text-center">
+                    <p className="text-xs font-bold text-slate-400">Password management is not available for candidate profiles.</p>
+                    <p className="text-[10px] text-slate-500 mt-1">Admin can only reset recruiter portal passwords.</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
-
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
-
-          {/* ─── Company panel ─── */}
-          {type === "company" && company && (
-            <>
-              {panelTab === "overview" && (
-                <>
-                  <CompanyOverview company={company} recruiters={recruiters} />
-                  {company.status === "Pending" && (
-                    <div className="flex gap-2">
-                      <button onClick={() => onApproveCompany(company.id)} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/20 transition-all">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                        Approve Registration
-                      </button>
-                      <button onClick={() => onRejectCompany(company.id)} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 shadow-lg shadow-rose-500/20 transition-all">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-              {panelTab === "edit" && (
-                <CompanyEditForm edit={edit} setEdit={setEdit} editSave={editSave} onSave={handleSave} />
-              )}
-              {panelTab === "access" && (
-                <CompanyAccess
-                  company={company} recruiters={recruiters}
-                  assignedRecruiterIds={companies.find((c) => c.id === company.id)?.recruiterIds ?? []}
-                  onAssign={(rid) => onAssignCompany(company.id, rid)}
-                  onUnassign={(rid) => onUnassignCompany(company.id, rid)}
-                />
-              )}
-              {panelTab === "password" && (
-                <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5 text-center">
-                  <p className="text-xs font-bold text-slate-400">Password management is not available for company accounts.</p>
-                  <p className="text-[10px] text-slate-500 mt-1">Company portal credentials are managed by the company's own admin through their workspace.</p>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* ─── Recruiter panel ─── */}
-          {type === "recruiter" && recruiter && (
-            <>
-              {panelTab === "overview" && (
-                <>
-                  <RecruiterOverview recruiter={recruiter} />
-                  <button
-                    onClick={() => onToggleRecruiterStatus(recruiter.id)}
-                    className={`w-full py-2.5 rounded-xl text-xs font-bold text-white transition-all ${recruiter.status === "Active" ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-lg shadow-amber-500/20" : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/20"}`}
-                  >
-                    {recruiter.status === "Active" ? "Suspend Portal Access" : "Restore Portal Access"}
-                  </button>
-                </>
-              )}
-              {panelTab === "edit" && (
-                <RecruiterEditForm edit={edit} setEdit={setEdit} editSave={editSave} onSave={handleSave} />
-              )}
-              {panelTab === "access" && (
-                <RecruiterAccess
-                  recruiter={recruiter}
-                  approvedCompanies={companies.filter((c) => c.status === "Approved")}
-                  onAssign={(cid) => onAssignCompany(cid, recruiter.id)}
-                  onUnassign={(cid) => onUnassignCompany(cid, recruiter.id)}
-                />
-              )}
-              {panelTab === "password" && (
-                <PasswordPanel pw={pw} setPw={setPw} pwSuccess={pwSuccess} onSubmit={handlePwReset}
-                  title="Reset Recruiter Password" desc="As an admin, you can reset this recruiter's portal password. No current password is required."
-                />
-              )}
-            </>
-          )}
-
-          {/* ─── Candidate panel ─── */}
-          {type === "candidate" && candidate && (
-            <>
-              {panelTab === "overview" && (
-                <CandidateOverview candidate={candidate} />
-              )}
-              {panelTab === "edit" && (
-                <CandidateEditForm edit={edit} setEdit={setEdit} editSave={editSave} onSave={handleSave} />
-              )}
-              {panelTab === "access" && (
-                <CandidateAccess
-                  candidate={candidate} recruiters={recruiters} companies={companies}
-                  onAssign={(cid) => {
-                    const rec = recruiters.find((r) => r.status === "Active" && r.assignedCompanyIds.includes(cid));
-                    if (rec) onAssignCompany(cid, rec.id);
-                  }}
-                />
-              )}
-              {panelTab === "password" && (
-                <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5 text-center">
-                  <p className="text-xs font-bold text-slate-400">Password management is not available for candidate profiles.</p>
-                  <p className="text-[10px] text-slate-500 mt-1">Admin can only reset recruiter portal passwords.</p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
       </div>
     </>
   );
@@ -1032,6 +1106,11 @@ function CompanyOverview({ company, recruiters }: { company: Company; recruiters
           <InfoItem label="Total Applicants">{company.applicantsCount}</InfoItem>
           <InfoItem label="Open Jobs">{company.openJobs}</InfoItem>
           <InfoItem label="Assigned Recruiters">{approvedNames.length === 0 ? <span className="text-slate-500">None</span> : approvedNames.join(", ")}</InfoItem>
+          {company.proofUrl && (
+            <InfoItem label="Proof Document">
+              <a href={company.proofUrl} target="_blank" rel="noreferrer" className="text-violet-400 hover:underline">Download PDF</a>
+            </InfoItem>
+          )}
         </div>
       </div>
 
@@ -1192,7 +1271,7 @@ function RecruiterOverview({ recruiter }: { recruiter: Recruiter }) {
   );
 }
 
-function CandidateOverview({ candidate }: { candidate: (typeof CANDIDATES)[number] }) {
+function CandidateOverview({ candidate }: { candidate: any }) {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5">
@@ -1354,7 +1433,7 @@ function RecruiterAccess({
 function CandidateAccess({
   candidate, recruiters, companies, onAssign,
 }: {
-  candidate: (typeof CANDIDATES)[number]; recruiters: Recruiter[]; companies: Company[];
+  candidate: any; recruiters: Recruiter[]; companies: Company[];
   onAssign: (companyId: string) => void;
 }) {
   // Map candidate to recruiter via department to suggest fit

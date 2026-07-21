@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { CANDIDATES } from '../../data';
+import { useMemo, useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 interface Props {
   onLogout: () => void;
@@ -23,14 +23,6 @@ interface HiringManager {
 
 const AVATAR_COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981", "#14b8a6", "#0ea5e9"];
 
-const SEED_HMS: HiringManager[] = [
-  { id: "HM-001", name: "Elena Fischer", email: "elena.f@vertexsys.io", department: "Engineering", status: "Active", addedAt: "2026-02-18", lastActive: "5 min ago", avatar: AVATAR_COLORS[0], openJobs: 4, activeCandidates: 23 },
-  { id: "HM-002", name: "Diego Reyes", email: "diego.r@vertexsys.io", department: "Sales", status: "Active", addedAt: "2026-03-05", lastActive: "1 hr ago", avatar: AVATAR_COLORS[1], openJobs: 2, activeCandidates: 11 },
-  { id: "HM-003", name: "Priya Sharma", email: "priya.s@vertexsys.io", department: "Product", status: "Pending Approval", addedAt: "2026-04-11", lastActive: "—", avatar: AVATAR_COLORS[2], openJobs: 0, activeCandidates: 0 },
-  { id: "HM-004", name: "Marcus Chen", email: "marcus.c@vertexsys.io", department: "Data", status: "Active", addedAt: "2025-12-08", lastActive: "2 days ago", avatar: AVATAR_COLORS[3], openJobs: 3, activeCandidates: 18 },
-  { id: "HM-005", name: "Hana Kobayashi", email: "hana.k@vertexsys.io", department: "Design", status: "Pending Approval", addedAt: "2026-04-14", lastActive: "—", avatar: AVATAR_COLORS[4], openJobs: 0, activeCandidates: 0 },
-];
-
 const HM_STATUS_STYLE: Record<HmStatus, string> = {
   "Active": "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30",
   "Pending Approval": "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30",
@@ -41,31 +33,88 @@ const HM_STATUS_STYLE: Record<HmStatus, string> = {
 const DEPARTMENTS = ["Engineering", "Design", "Product", "Marketing", "Sales", "Operations", "Data"];
 
 export default function CompanyDashboard({ onLogout }: Props) {
+  const { userId, token } = useAuth();
   const [tab, setTab] = useState<Tab>("overview");
-  const [hms, setHms] = useState<HiringManager[]>(SEED_HMS);
+  const [hms, setHms] = useState<HiringManager[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [selectedHm, setSelectedHm] = useState<HiringManager | null>(null);
   const [statusFilter, setStatusFilter] = useState<"All" | HmStatus>("All");
   const [search, setSearch] = useState("");
   const [emailSent, setEmailSent] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<number | null>(null);
 
   const [addForm, setAddForm] = useState({ name: "", email: "", department: "Engineering" });
 
   // Company profile (editable)
   const [profile, setProfile] = useState({
-    name: "Vertex Systems Inc.",
-    industry: "Enterprise SaaS",
-    size: "501-1000 employees",
-    website: "vertexsys.io",
-    location: "San Francisco, CA",
-    email: "talent@vertexsys.io",
-    contact: "Sara Kim",
-    phone: "+1 (415) 555-0142",
-    founded: "2018",
-    description: "Vertex Systems is a leader in enterprise SaaS solutions, empowering Fortune 500 organizations to modernize their operations with intuitive, scalable software platforms.",
+    name: "Loading...",
+    industry: "",
+    size: "",
+    website: "",
+    location: "",
+    email: "",
+    contact: "",
+    phone: "",
+    founded: "",
+    description: "",
   });
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileEdit, setProfileEdit] = useState(profile);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    fetch(`/api/companies/by-user/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.id) {
+          setCompanyId(data.id);
+          const loadedProfile = {
+            name: data.name || "",
+            industry: data.industry || "",
+            size: data.size || "",
+            website: "", // Not backed by DB
+            location: data.location || "",
+            email: data.email || "",
+            contact: data.contactPersonName || "",
+            phone: data.contactPersonNumber || "",
+            founded: "", // Not backed by DB
+            description: data.description || "",
+          };
+          setProfile(loadedProfile);
+          setProfileEdit(loadedProfile);
+        }
+      })
+      .catch(console.error);
+  }, [userId, token]);
+
+  useEffect(() => {
+    if (!companyId) return;
+
+    fetch(`/api/hiring-managers/by-company/${companyId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then((data: any[]) => {
+        if (Array.isArray(data)) {
+          setHms(data.map((hm, i) => ({
+            id: hm.id.toString(),
+            name: hm.name || "",
+            email: hm.email || "",
+            department: hm.department || "Engineering",
+            status: "Active", // Mocked as it's not in DB
+            addedAt: hm.joinedDate ? hm.joinedDate.split('T')[0] : new Date().toISOString().split('T')[0],
+            lastActive: "—",
+            avatar: AVATAR_COLORS[i % AVATAR_COLORS.length],
+            openJobs: 0,
+            activeCandidates: 0
+          })));
+        }
+      })
+      .catch(console.error);
+  }, [companyId, token]);
 
   const stats = useMemo(() => ({
     total: hms.length,
@@ -86,33 +135,91 @@ export default function CompanyDashboard({ onLogout }: Props) {
     });
   }, [hms, statusFilter, search]);
 
-  const addHm = () => {
-    if (!addForm.name || !addForm.email) return;
-    const newHm: HiringManager = {
-      id: `HM-${String(hms.length + 6).padStart(3, "0")}`,
-      name: addForm.name,
-      email: addForm.email,
-      department: addForm.department,
-      status: "Pending Approval",
-      addedAt: new Date().toISOString().slice(0, 10),
-      lastActive: "—",
-      avatar: AVATAR_COLORS[hms.length % AVATAR_COLORS.length],
-      openJobs: 0,
-      activeCandidates: 0,
-    };
-    setHms((p) => [...p, newHm]);
-    setEmailSent(addForm.email);
-    setAddForm({ name: "", email: "", department: "Engineering" });
-    setTimeout(() => { setShowAdd(false); setEmailSent(null); }, 3200);
+  const addHm = async () => {
+    if (!addForm.name || !addForm.email || !companyId || !userId) return;
+    try {
+      const res = await fetch(`/api/hiring-managers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: addForm.name,
+          email: addForm.email,
+          department: addForm.department,
+          companyId: companyId,
+          userId: userId // Typically they would have their own login, but passing valid required keys
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const newHm: HiringManager = {
+          id: data.id.toString(),
+          name: data.name,
+          email: data.email,
+          department: data.department || "Engineering",
+          status: "Active",
+          addedAt: new Date().toISOString().slice(0, 10),
+          lastActive: "—",
+          avatar: AVATAR_COLORS[hms.length % AVATAR_COLORS.length],
+          openJobs: 0,
+          activeCandidates: 0,
+        };
+        setHms((p) => [...p, newHm]);
+        setEmailSent(addForm.email);
+        setAddForm({ name: "", email: "", department: "Engineering" });
+        setTimeout(() => { setShowAdd(false); setEmailSent(null); }, 3200);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const removeHm = (id: string) => setHms((p) => p.filter((h) => h.id !== id));
-  const toggleHmStatus = (id: string) => setHms((p) => p.map((h) => h.id === id ? { ...h, status: h.status === "Active" ? "Suspended" : "Active" } : h));
+  const removeHm = async (id: string) => {
+    try {
+      const res = await fetch(`/api/hiring-managers/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setHms((p) => p.filter((h) => h.id !== id));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-  const saveProfile = () => {
-    setProfile(profileEdit);
-    setProfileSaved(true);
-    setTimeout(() => setProfileSaved(false), 2500);
+  const toggleHmStatus = (id: string) => {
+    // DB doesn't have status, updating locally only for demo
+    setHms((p) => p.map((h) => h.id === id ? { ...h, status: h.status === "Active" ? "Suspended" : "Active" } : h));
+  }
+
+  const saveProfile = async () => {
+    if (!companyId) return;
+    try {
+      const res = await fetch(`/api/companies/${companyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: profileEdit.name,
+          industry: profileEdit.industry,
+          size: profileEdit.size,
+          location: profileEdit.location,
+          email: profileEdit.email,
+          contactPersonName: profileEdit.contact,
+          contactPersonNumber: profileEdit.phone,
+          description: profileEdit.description,
+          userId: userId
+        })
+      });
+
+      if (res.ok) {
+        setProfile(profileEdit);
+        setProfileSaved(true);
+        setTimeout(() => setProfileSaved(false), 2500);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -142,11 +249,10 @@ export default function CompanyDashboard({ onLogout }: Props) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                tab === t.id
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${tab === t.id
                   ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/20"
                   : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
-              }`}
+                }`}
             >
               {t.icon}
               {t.label}
@@ -188,9 +294,8 @@ export default function CompanyDashboard({ onLogout }: Props) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                tab === t.id ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
-              }`}
+              className={`flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all ${tab === t.id ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
+                }`}
             >
               {t.icon}
               <span className="truncate">{t.label}</span>
@@ -416,15 +521,14 @@ export default function CompanyDashboard({ onLogout }: Props) {
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                      statusFilter === s
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${statusFilter === s
                         ? s === "Active" ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30"
                           : s === "Pending Approval" ? "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30"
-                          : s === "Rejected" ? "bg-red-500/15 text-red-300 ring-1 ring-inset ring-red-500/30"
-                          : s === "Suspended" ? "bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-500/30"
-                          : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/20"
+                            : s === "Rejected" ? "bg-red-500/15 text-red-300 ring-1 ring-inset ring-red-500/30"
+                              : s === "Suspended" ? "bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-500/30"
+                                : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/20"
                         : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
-                    }`}
+                      }`}
                   >
                     {s}
                     <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${statusFilter === s ? "bg-white/10" : "bg-slate-800"}`}>{count}</span>

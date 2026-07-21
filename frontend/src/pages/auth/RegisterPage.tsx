@@ -132,7 +132,7 @@ function CompanySuccessModal({ isDark, onClose }: { isDark: boolean; onClose: ()
 // ════════════════════════════════════════════════════════════════════════
 export default function RegisterPage() {
   const { theme } = useTheme();
-  const { signIn, openLogin, goHome } = useAuth();
+  const { openLogin, goHome } = useAuth();
   const isDark = theme === 'dark';
 
   const [form, setForm] = useState<FormData>(initialForm);
@@ -149,15 +149,13 @@ export default function RegisterPage() {
     setForm(prev => ({ ...prev, [field]: value }));
 
   const inputCls = (hasIcon = true) =>
-    `w-full ${hasIcon ? 'pl-10' : 'pl-4'} pr-4 py-2.5 rounded-xl text-sm outline-none border transition-colors ${
-      isDark ? 'bg-surface-900 border-surface-700 text-white placeholder:text-surface-500 focus:border-primary-500'
-           : 'bg-surface-50 border-surface-300 text-surface-900 placeholder:text-surface-400 focus:border-primary-500'
+    `w-full ${hasIcon ? 'pl-10' : 'pl-4'} pr-4 py-2.5 rounded-xl text-sm outline-none border transition-colors ${isDark ? 'bg-surface-900 border-surface-700 text-white placeholder:text-surface-500 focus:border-primary-500'
+      : 'bg-surface-50 border-surface-300 text-surface-900 placeholder:text-surface-400 focus:border-primary-500'
     }`;
 
-  const selectCls = `w-full pl-4 pr-4 py-2.5 rounded-xl text-sm outline-none border transition-colors appearance-none cursor-pointer ${
-    isDark ? 'bg-surface-900 border-surface-700 text-white focus:border-primary-500'
-         : 'bg-surface-50 border-surface-300 text-surface-900 focus:border-primary-500'
-  }`;
+  const selectCls = `w-full pl-4 pr-4 py-2.5 rounded-xl text-sm outline-none border transition-colors appearance-none cursor-pointer ${isDark ? 'bg-surface-900 border-surface-700 text-white focus:border-primary-500'
+    : 'bg-surface-50 border-surface-300 text-surface-900 focus:border-primary-500'
+    }`;
 
   const addSkill = () => {
     const s = form.skillInput.trim();
@@ -208,22 +206,110 @@ export default function RegisterPage() {
   const next = () => { if (!validate()) return; if (step < totalSteps) setStep(step + 1); else submit(); };
   const back = () => { if (step > 1) setStep(step - 1); else goHome(); };
 
-  const submit = () => {
+  const submit = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
       if (form.role === 'candidate') {
+        const authRes = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: form.fullName,
+            email: form.email,
+            password: form.password,
+            role: 'Candidate'
+          })
+        });
+        let authData = await authRes.json();
+        if (!authRes.ok) throw new Error(authData.message || 'Registration failed');
+
+        const loginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: form.email,
+            password: form.password
+          })
+        });
+        const loginData = await loginRes.json();
+        if (!loginRes.ok) throw new Error(loginData.message || 'Login failed after registration');
+
+        authData = loginData;
+
+        // ✅ Properly extract token and userId inside submit()
+        const token = authData?.token || authData?.result?.token || authData?.Token;
+        const userId = authData?.userId || authData?.result?.userId || authData?.UserId;
+
+        if (!token) {
+          throw new Error("Authentication token was not received from login.");
+        }
+
+        const candidatePayload = {
+          name: form.fullName,
+          email: form.email,
+          phoneNumber: form.phone,
+          location: form.location,
+          currentJobTitle: form.currentTitle,
+          experienceLevel: form.experience,
+          education: form.education,
+          skills: form.skills.join(', '),
+          linkedinUrl: form.linkedinUrl,
+          bio: form.bio,
+          userId: userId
+        };
+
+        const candRes = await fetch('/api/candidates', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(candidatePayload)
+        });
+
+        if (!candRes.ok) throw new Error('Failed to create candidate profile');
+
         setShowCandidateSuccess(true);
-      } else {
+
+      } else if (form.role === 'company') {
+        const companyPayload = {
+          name: form.companyName,
+          industry: form.companyIndustry,
+          email: form.companyEmail,
+          phoneNumber: form.companyPhone,
+          location: form.companyLocation,
+          size: form.companySize,
+          description: form.companyDescription,
+          contactPersonName: form.contactPersonName,
+          contactPersonNumber: form.contactPersonPhone,
+        };
+
+        const compRes = await fetch('/api/companies/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(companyPayload)
+        });
+
+        if (!compRes.ok) {
+          const text = await compRes.text();
+          throw new Error(text || 'Failed to request company account');
+        }
+
         setShowCompanySuccess(true);
       }
-    }, 1200);
+
+    } catch (err: any) {
+      setErrors({ server: err.message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCandidateSuccessClose = () => {
     setShowCandidateSuccess(false);
-    const displayName = form.fullName.trim().split(' ')[0];
-    signIn(displayName, 'candidate');
+    openLogin();
   };
 
   const handleCompanySuccessClose = () => {
@@ -304,9 +390,8 @@ export default function RegisterPage() {
                       const selected = form.role === r.id;
                       return (
                         <button key={r.id} type="button" onClick={() => { set('role', r.id); setErrors({}); }}
-                          className={`w-full flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer ${
-                            selected ? 'border-primary-500 shadow-lg shadow-primary-500/10' : isDark ? 'border-surface-700 hover:border-surface-600' : 'border-surface-200 hover:border-surface-300'
-                          } ${isDark ? 'bg-surface-800/50' : 'bg-surface-50'}`}>
+                          className={`w-full flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer ${selected ? 'border-primary-500 shadow-lg shadow-primary-500/10' : isDark ? 'border-surface-700 hover:border-surface-600' : 'border-surface-200 hover:border-surface-300'
+                            } ${isDark ? 'bg-surface-800/50' : 'bg-surface-50'}`}>
                           <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${r.color} flex items-center justify-center shrink-0 shadow-lg`}>
                             <r.icon className="w-6 h-6 text-white" />
                           </div>
@@ -561,6 +646,13 @@ export default function RegisterPage() {
                 </div>
               )}
 
+              {/* Server error message display */}
+              {errors.server && (
+                <div className="p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  {errors.server}
+                </div>
+              )}
+
               {/* ── Action buttons ── */}
               <div className="flex items-center justify-between gap-4 mt-8 pb-8">
                 <button type="button" onClick={back} className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${isDark ? 'text-surface-400 hover:text-white hover:bg-surface-800' : 'text-surface-500 hover:text-surface-900 hover:bg-surface-100'}`}>
@@ -570,7 +662,7 @@ export default function RegisterPage() {
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold text-sm shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 hover:from-primary-600 hover:to-primary-700 transition-all duration-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                   {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     : step === totalSteps ? <>Submit<ChevronRight className="w-4 h-4" /></>
-                    : <>Continue<ArrowRight className="w-4 h-4" /></>}
+                      : <>Continue<ArrowRight className="w-4 h-4" /></>}
                 </button>
               </div>
 

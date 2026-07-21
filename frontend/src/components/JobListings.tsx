@@ -1,12 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import {
   MapPin, Clock, ArrowRight, Sparkles,
   Users
 } from 'lucide-react';
-import { jobs, categories, type Job } from '../data/jobs';
+import { type Job } from '../data/jobs';
 import JobDetail from './JobDetail';
+
+const categoriesList = [
+  { name: 'Engineering', icon: '💻', count: 124 },
+  { name: 'Design', icon: '🎨', count: 86 },
+  { name: 'Product', icon: '📦', count: 42 },
+  { name: 'Marketing', icon: '📈', count: 38 },
+  { name: 'Sales', icon: '🤝', count: 24 },
+  { name: 'Customer Success', icon: '🫂', count: 18 }
+];
 
 function AIScoreBadge({ score }: { score: number }) {
   const getColor = (s: number) => {
@@ -38,17 +47,15 @@ function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className={`group relative rounded-2xl p-5 lg:p-6 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer ${
-        isDark
-          ? 'bg-surface-800/50 border border-surface-700/50 hover:border-primary-500/30 hover:bg-surface-800/80'
-          : 'bg-white border border-surface-200 hover:border-primary-300 hover:shadow-xl hover:shadow-primary-100/50'
-      }`}
+      className={`group relative rounded-2xl p-5 lg:p-6 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer ${isDark
+        ? 'bg-surface-800/50 border border-surface-700/50 hover:border-primary-500/30 hover:bg-surface-800/80'
+        : 'bg-white border border-surface-200 hover:border-primary-300 hover:shadow-xl hover:shadow-primary-100/50'
+        }`}
     >
       <div className="flex items-start gap-4">
         {/* Company Logo */}
-        <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0 ${
-          isDark ? 'bg-surface-700/80' : 'bg-surface-100'
-        }`}>
+        <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0 ${isDark ? 'bg-surface-700/80' : 'bg-surface-100'
+          }`}>
           {job.logo}
         </div>
 
@@ -56,9 +63,8 @@ function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 mb-2">
             <div>
-              <h3 className={`font-display font-bold text-lg group-hover:text-primary-500 transition-colors ${
-                isDark ? 'text-white' : 'text-surface-900'
-              }`}>
+              <h3 className={`font-display font-bold text-lg group-hover:text-primary-500 transition-colors ${isDark ? 'text-white' : 'text-surface-900'
+                }`}>
                 {job.title}
               </h3>
               <p className={`text-sm font-medium ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
@@ -95,23 +101,20 @@ function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
                 {job.type}
               </span>
               {job.tags.slice(0, 2).map(tag => (
-                <span key={tag} className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                  isDark ? 'bg-surface-700/60 text-surface-300' : 'bg-surface-100 text-surface-600'
-                }`}>
+                <span key={tag} className={`px-2.5 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-surface-700/60 text-surface-300' : 'bg-surface-100 text-surface-600'
+                  }`}>
                   {tag}
                 </span>
               ))}
               {job.tags.length > 2 && (
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                  isDark ? 'bg-surface-700/60 text-surface-400' : 'bg-surface-100 text-surface-500'
-                }`}>
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-surface-700/60 text-surface-400' : 'bg-surface-100 text-surface-500'
+                  }`}>
                   +{job.tags.length - 2}
                 </span>
               )}
             </div>
-            <span className={`text-sm font-bold whitespace-nowrap ${
-              isDark ? 'text-accent-400' : 'text-accent-600'
-            }`}>
+            <span className={`text-sm font-bold whitespace-nowrap ${isDark ? 'text-accent-400' : 'text-accent-600'
+              }`}>
               {job.salary}
             </span>
           </div>
@@ -131,34 +134,67 @@ export default function JobListings() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const filters = ['All', 'Full-time', 'Remote', 'Contract', 'Part-time'];
 
+  const [jobsData, setJobsData] = useState<Job[]>([]);
+
+  useEffect(() => {
+    fetch('/api/jobs')
+      .then(res => res.json())
+      .then((data: any[]) => {
+        if (Array.isArray(data)) {
+          const parsedJobs = data.map(j => ({
+            id: j.id,
+            title: j.title || 'Untitled',
+            company: j.companyName || 'Unknown Company',
+            logo: j.companyName ? j.companyName[0] : 'C',
+            location: j.location || 'Remote',
+            type: (j.type || 'Full-time') as any,
+            salary: j.salaryRange || 'Competitive',
+            posted: j.postedDate ? new Date(j.postedDate).toLocaleDateString() : 'Recently',
+            tags: j.skillsNeeded ? j.skillsNeeded.split(',').map((t: string) => t.trim()) : [],
+            aiScore: 90, // mock
+            description: j.descriptionAboutTheRole || '',
+            applicants: j.applicants || 0,
+            fullDescription: j.descriptionAboutTheRole || '',
+            responsibilities: j.responsibilities ? j.responsibilities.split('\n') : [],
+            requirements: j.requirements ? j.requirements.split('\n') : [],
+            benefits: [],
+            experience: j.yearsOfExperienceNeeded || 'Any',
+            department: 'General',
+            companyDescription: j.descriptionAboutTheCompany || '',
+            skillMatch: [],
+            category: j.category || 'Engineering'
+          }));
+          setJobsData(parsedJobs);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   const filteredJobs = activeFilter === 'All'
-    ? jobs
-    : jobs.filter(j => j.type === activeFilter);
+    ? jobsData
+    : jobsData.filter(j => j.type === activeFilter);
 
   return (
     <>
       <section id="find-jobs" className={`relative py-16 lg:py-20 ${isDark ? 'bg-surface-950' : 'bg-white'}`}>
         {/* Background */}
-        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-3xl ${
-          isDark ? 'bg-primary-500/3' : 'bg-primary-50/50'
-        }`} />
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-3xl ${isDark ? 'bg-primary-500/3' : 'bg-primary-50/50'
+          }`} />
 
         <div className="relative w-full px-6 sm:px-10 lg:px-16">
           {/* Section Header */}
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
             <div>
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${
-                isDark
-                  ? 'bg-primary-300/10 border border-primary-300/20'
-                  : 'bg-primary-50 border border-primary-200'
-              }`}>
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${isDark
+                ? 'bg-primary-300/10 border border-primary-300/20'
+                : 'bg-primary-50 border border-primary-200'
+                }`}>
                 <span className={`text-sm font-semibold ${isDark ? 'text-primary-300' : 'text-primary-600'}`}>
                   AI-Curated Listings
                 </span>
               </div>
-              <h2 className={`font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4 ${
-                isDark ? 'text-white' : 'text-surface-900'
-              }`}>
+              <h2 className={`font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4 ${isDark ? 'text-white' : 'text-surface-900'
+                }`}>
                 Featured{' '}
                 <span className="bg-gradient-to-r from-primary-300 to-accent-500 bg-clip-text text-transparent">
                   Job Openings
@@ -182,13 +218,12 @@ export default function JobListings() {
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 cursor-pointer ${
-                    activeFilter === filter
-                      ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
-                      : isDark
-                        ? 'bg-surface-800 text-surface-300 hover:bg-surface-700 border border-surface-700'
-                        : 'bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200'
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 cursor-pointer ${activeFilter === filter
+                    ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                    : isDark
+                      ? 'bg-surface-800 text-surface-300 hover:bg-surface-700 border border-surface-700'
+                      : 'bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200'
+                    }`}
                 >
                   {filter}
                 </button>
@@ -198,14 +233,13 @@ export default function JobListings() {
 
           {/* Categories Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-            {categories.map(cat => (
+            {categoriesList.map(cat => (
               <div
                 key={cat.name}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer hover:-translate-y-0.5 ${
-                  isDark
-                    ? 'bg-surface-800/50 border border-surface-700/50 hover:border-surface-600'
-                    : 'bg-surface-50 border border-surface-200 hover:border-surface-300 hover:shadow-md'
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer hover:-translate-y-0.5 ${isDark
+                  ? 'bg-surface-800/50 border border-surface-700/50 hover:border-surface-600'
+                  : 'bg-surface-50 border border-surface-200 hover:border-surface-300 hover:shadow-md'
+                  }`}
               >
                 <span className="text-xl">{cat.icon}</span>
                 <div>
@@ -228,11 +262,10 @@ export default function JobListings() {
             <div className="text-center mt-10">
               <button
                 onClick={openJobs}
-                className={`inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
-                isDark
+                className={`inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${isDark
                   ? 'bg-surface-800 text-surface-300 hover:bg-surface-700 border border-surface-700'
                   : 'bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200'
-              }`}>
+                  }`}>
                 Load More Jobs
                 <ArrowRight className="w-4 h-4" />
               </button>

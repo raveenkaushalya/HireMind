@@ -10,6 +10,8 @@ import HiringManagerDashboard from './pages/recruitment/hiring-managers/HiringMa
 import RecruiterDashboard from './pages/recruitment/recruiter/RecruiterDashboard';
 import CompanyDashboard from './pages/company/CompanyDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminLogin from './pages/auth/AdminLogin';
+import CompanySetupPassword from './pages/auth/CompanySetupPassword';
 
 function AppContent() {
   const { currentPage, userRole, signOut, openRoleDashboard } = useAuth();
@@ -41,6 +43,8 @@ function AppContent() {
   if (currentPage === 'admin_dashboard') {
     return <AdminDashboard onLogout={signOut} />;
   }
+  if (currentPage === 'admin_login') return <AdminLogin />;
+  if (currentPage === 'company_setup_password') return <CompanySetupPassword />;
 
   return <HomePage />;
 }
