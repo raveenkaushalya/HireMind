@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react';
 const faqs = [
   {
     q: 'How does the AI matching algorithm work?',
-    a: 'Our AI analyzes over 200 data points from each candidate profile and job description — including skills, experience, certifications, career trajectory, and culture signals. Using deep learning models trained on 500M+ data points, it produces a compatibility score from 0-100 with a transparent breakdown.',
+    a: 'Our AI analyzes over 200 data points from each candidate profile and job description including skills, experience, certifications, career trajectory, and culture signals. Using deep learning models trained on 500M+ data points, it produces a compatibility score from 0-100 with a transparent breakdown.',
   },
   {
     q: 'Is the AI really bias-free?',
@@ -14,7 +14,7 @@ const faqs = [
   },
   {
     q: 'Can candidates use the platform for free?',
-    a: 'Yes! Candidates can create a profile, upload a resume, get their AI score, and apply to unlimited jobs completely free — forever. We only charge companies and recruiters for premium tools like advanced screening, analytics, and bulk matching.',
+    a: 'Yes! Candidates can create a profile, upload a resume, get their AI score, and apply to unlimited jobs completely free forever. We only charge companies and recruiters for premium tools like advanced screening, analytics, and bulk matching.',
   },
   {
     q: 'How accurate is the AI candidate score?',
@@ -22,7 +22,7 @@ const faqs = [
   },
   {
     q: 'How long does it take to get matches?',
-    a: 'Most matches are generated in real-time — typically under 3 seconds. After uploading a resume or posting a job, you\'ll see ranked results instantly, no waiting required.',
+    a: 'Most matches are generated in real-time typically under 3 seconds. After uploading a resume or posting a job, you\'ll see ranked results instantly, no waiting required.',
   },
   {
     q: 'Is my data secure?',

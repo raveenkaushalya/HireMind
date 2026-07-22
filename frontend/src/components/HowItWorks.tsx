@@ -30,7 +30,7 @@ const steps = [
     icon: PartyPopper,
     step: '04',
     title: 'Connect & Hire',
-    description: 'Connect with your best matches, schedule interviews, and close offers — all within the platform.',
+    description: 'Connect with your best matches, schedule interviews, and close offers all within the platform.',
     color: 'from-amber-500 to-orange-500',
     shadow: 'shadow-amber-500/20',
   },
@@ -71,7 +71,7 @@ export default function HowItWorks() {
             {' '}Works
           </h2>
           <p className={`text-lg ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
-            Get started in minutes. Our AI handles the heavy lifting so you can focus on what matters most — finding the perfect match.
+            Get started in minutes. Our AI handles the heavy lifting so you can focus on what matters most finding the perfect match.
           </p>
         </div>
 

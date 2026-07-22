@@ -77,7 +77,7 @@ export default function Contact() {
                 <div className="space-y-3">
                   {[
                     { icon: Mail, label: 'support@hireminds.com' },
-                    { icon: Phone, label: '+1 (555) 123-4567' },
+                    { icon: Phone, label: '+94 (78) 940 5488' },
                   ].map(item => (
                     <div key={item.label} className="flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDark ? 'bg-white/5' : 'bg-primary-50'}`}>
@@ -124,7 +124,7 @@ export default function Contact() {
                           <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-surface-300' : 'text-surface-700'}`}>Phone</label>
                           <div className="relative">
                             <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-surface-500' : 'text-surface-400'}`} />
-                            <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+1 (555) 000-0000" className={inputCls()} />
+                            <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+94 (78) 940 5488" className={inputCls()} />
                           </div>
                         </div>
                         <div>
