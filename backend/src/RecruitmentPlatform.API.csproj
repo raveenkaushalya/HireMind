@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>948ccc19-006f-4cec-9912-e81812e79ea4</UserSecretsId>
+		<!-- Removed: DockerDefaultTargetOS, GeneratePackageOnBuild, OutputType.
+         None of these are needed for a plain ASP.NET Core Web API, and OutputType=WinExe
+         in particular ties the project to Windows-only builds unintentionally. -->
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+		<PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
+		<PackageReference Include="MailKit" Version="4.17.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.9" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.9">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="OpenAI" Version="2.12.0" />
+		<PackageReference Include="OpenAI.ChatClient" Version="1.0.0" />
+		<PackageReference Include="PdfPig" Version="0.1.15" />
+		<PackageReference Include="supabase-csharp" Version="0.16.2" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+		<PackageReference Include="System.ClientModel" Version="1.14.0" />
+		<!-- Removed: Microsoft.IdentityModel.Tokens and System.IdentityModel.Tokens.Jwt as explicit references.
+         Microsoft.AspNetCore.Authentication.JwtBearer already brings these in transitively at a
+         compatible version — pinning them separately at an older version (8.19.1) risked a
+         NuGet downgrade error (NU1605) against JwtBearer 10.0.9's own dependency requirements. -->
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,8 @@
+C:\Program Files\dotnet\sdk\10.0.301\Microsoft.Common.CurrentVersion.targets(5397,5): error MSB3027: Could not copy "C:\Users\VICTUS\Downloads\New folder (3)\RecruitmentPlatform.API\obj\Debug\net10.0\apphost.exe" to "bin\Debug\net10.0\RecruitmentPlatform.API.exe". Exceeded retry count of 10. Failed. The file is locked by: "RecruitmentPlatform.API (26384)" [C:\Users\VICTUS\Downloads\New folder (3)\RecruitmentPlatform.API\RecruitmentPlatform.API.csproj]
+C:\Program Files\dotnet\sdk\10.0.301\Microsoft.Common.CurrentVersion.targets(5397,5): error MSB3021: Unable to copy file "C:\Users\VICTUS\Downloads\New folder (3)\RecruitmentPlatform.API\obj\Debug\net10.0\apphost.exe" to "bin\Debug\net10.0\RecruitmentPlatform.API.exe". The process cannot access the file 'C:\Users\VICTUS\Downloads\New folder (3)\RecruitmentPlatform.API\bin\Debug\net10.0\RecruitmentPlatform.API.exe' because it is being used by another process. [C:\Users\VICTUS\Downloads\New folder (3)\RecruitmentPlatform.API\RecruitmentPlatform.API.csproj]
+
+Build FAILED.
+    10 Warning(s)
+    2 Error(s)
+
+Time Elapsed 00:00:15.43
