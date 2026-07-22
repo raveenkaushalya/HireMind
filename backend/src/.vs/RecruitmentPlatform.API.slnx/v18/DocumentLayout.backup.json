@@ -1,0 +1,366 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\VICTUS\\Downloads\\src\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\services\\icandidateservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:services\\icandidateservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\controllers\\candidatescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:controllers\\candidatescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\dtos\\candidate\\candidaterequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:dtos\\candidate\\candidaterequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\services\\candidateservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:services\\candidateservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\dtos\\candidate\\createcandidatedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:dtos\\candidate\\createcandidatedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\dtos\\candidate\\updateresumedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:dtos\\candidate\\updateresumedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\models\\candidate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:models\\candidate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\dtos\\candidate\\candidateresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:dtos\\candidate\\candidateresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\services\\emailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:services\\emailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\services\\iemailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:services\\iemailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\models\\emailsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:models\\emailsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\data\\dbinitializer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:data\\dbinitializer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\controllers\\resumecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:controllers\\resumecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\services\\openrouterresumescorer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:services\\openrouterresumescorer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\services\\documentextractor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:services\\documentextractor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\recruitmentplatform.api.http||{5703B403-55E7-4C63-8C88-A8F52C7A45C5}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:recruitmentplatform.api.http||{5703B403-55E7-4C63-8C88-A8F52C7A45C5}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\users\\victus\\downloads\\src\\controllers\\applicationscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:controllers\\applicationscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ICandidateService.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\ICandidateService.cs",
+              "RelativeDocumentMoniker": "Services\\ICandidateService.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\ICandidateService.cs",
+              "RelativeToolTip": "Services\\ICandidateService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T15:48:13.763Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "CandidateRequestDto.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\DTOs\\Candidate\\CandidateRequestDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Candidate\\CandidateRequestDto.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\DTOs\\Candidate\\CandidateRequestDto.cs",
+              "RelativeToolTip": "DTOs\\Candidate\\CandidateRequestDto.cs",
+              "ViewState": "AgIAAAUAAAAAAAAAAAAkwA8AAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T15:45:06.259Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "CandidateService.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\CandidateService.cs",
+              "RelativeDocumentMoniker": "Services\\CandidateService.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\CandidateService.cs",
+              "RelativeToolTip": "Services\\CandidateService.cs",
+              "ViewState": "AgIAAD4AAAAAAAAAAAAAwEcAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T15:39:29.704Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "UpdateResumeDto.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\DTOs\\Candidate\\UpdateResumeDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Candidate\\UpdateResumeDto.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\DTOs\\Candidate\\UpdateResumeDto.cs",
+              "RelativeToolTip": "DTOs\\Candidate\\UpdateResumeDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T15:33:15.35Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "CreateCandidateDto.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\DTOs\\Candidate\\CreateCandidateDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Candidate\\CreateCandidateDto.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\DTOs\\Candidate\\CreateCandidateDto.cs",
+              "RelativeToolTip": "DTOs\\Candidate\\CreateCandidateDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T15:32:38.714Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAHIAAAAAAAAAAAAUwH0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-19T16:45:43.62Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "CandidatesController.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Controllers\\CandidatesController.cs",
+              "RelativeDocumentMoniker": "Controllers\\CandidatesController.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Controllers\\CandidatesController.cs",
+              "RelativeToolTip": "Controllers\\CandidatesController.cs",
+              "ViewState": "AgIAACUAAAAAAAAAAAAkwC0AAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T15:23:46.784Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Candidate.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Models\\Candidate.cs",
+              "RelativeDocumentMoniker": "Models\\Candidate.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Models\\Candidate.cs",
+              "RelativeToolTip": "Models\\Candidate.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T15:22:17.61Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Data\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "Data\\AppDbContext.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Data\\AppDbContext.cs",
+              "RelativeToolTip": "Data\\AppDbContext.cs",
+              "ViewState": "AgIAAEsAAAAAAAAAAAAAwFEAAABdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T17:06:29.592Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "CandidateResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\DTOs\\Candidate\\CandidateResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\Candidate\\CandidateResponseDto.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\DTOs\\Candidate\\CandidateResponseDto.cs",
+              "RelativeToolTip": "DTOs\\Candidate\\CandidateResponseDto.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAowBAAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T15:44:49.89Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "IEmailService.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\IEmailService.cs",
+              "RelativeDocumentMoniker": "Services\\IEmailService.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\IEmailService.cs",
+              "RelativeToolTip": "Services\\IEmailService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T13:10:59.399Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "DbInitializer.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Data\\DbInitializer.cs",
+              "RelativeDocumentMoniker": "Data\\DbInitializer.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Data\\DbInitializer.cs",
+              "RelativeToolTip": "Data\\DbInitializer.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAABKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T09:17:19.321Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "DocumentExtractor.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\DocumentExtractor.cs",
+              "RelativeDocumentMoniker": "Services\\DocumentExtractor.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\DocumentExtractor.cs",
+              "RelativeToolTip": "Services\\DocumentExtractor.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-20T19:04:27.953Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "RecruitmentPlatform.API.http",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\RecruitmentPlatform.API.http",
+              "RelativeDocumentMoniker": "RecruitmentPlatform.API.http",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\RecruitmentPlatform.API.http",
+              "RelativeToolTip": "RecruitmentPlatform.API.http",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003502|",
+              "WhenOpened": "2026-07-19T16:45:35.991Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-07-20T16:08:05.863Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "EmailSettings.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Models\\EmailSettings.cs",
+              "RelativeDocumentMoniker": "Models\\EmailSettings.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Models\\EmailSettings.cs",
+              "RelativeToolTip": "Models\\EmailSettings.cs",
+              "ViewState": "AgIAAAIAAAAAAAAAAAAxwAsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T13:13:46.342Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "EmailService.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\EmailService.cs",
+              "RelativeDocumentMoniker": "Services\\EmailService.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\EmailService.cs",
+              "RelativeToolTip": "Services\\EmailService.cs",
+              "ViewState": "AgIAACYAAAAAAAAAAAAgwC8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-21T13:15:38.766Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "ResumeController.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Controllers\\ResumeController.cs",
+              "RelativeDocumentMoniker": "Controllers\\ResumeController.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Controllers\\ResumeController.cs",
+              "RelativeToolTip": "Controllers\\ResumeController.cs",
+              "ViewState": "AgIAAD0AAAAAAAAAAAAYwE8AAABXAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-20T19:09:59.546Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "OpenRouterResumeScorer.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\OpenRouterResumeScorer.cs",
+              "RelativeDocumentMoniker": "Services\\OpenRouterResumeScorer.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Services\\OpenRouterResumeScorer.cs",
+              "RelativeToolTip": "Services\\OpenRouterResumeScorer.cs",
+              "ViewState": "AgIAAEMAAAAAAAAAAADwv04AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-20T19:13:24.402Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "User.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Models\\User.cs",
+              "RelativeDocumentMoniker": "Models\\User.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Models\\User.cs",
+              "RelativeToolTip": "Models\\User.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-19T16:40:20.61Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "ApplicationsController.cs",
+              "DocumentMoniker": "C:\\Users\\VICTUS\\Downloads\\src\\Controllers\\ApplicationsController.cs",
+              "RelativeDocumentMoniker": "Controllers\\ApplicationsController.cs",
+              "ToolTip": "C:\\Users\\VICTUS\\Downloads\\src\\Controllers\\ApplicationsController.cs",
+              "RelativeToolTip": "Controllers\\ApplicationsController.cs",
+              "ViewState": "AgIAABYAAAAAAAAAAAAQwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-19T16:38:19.95Z"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c64b9c2-e352-428e-a56d-0ace190b99a6}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

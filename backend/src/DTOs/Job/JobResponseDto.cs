@@ -1,0 +1,23 @@
+namespace RecruitmentPlatform.API.DTOs.Job
+{
+    public class JobResponseDto
+    {
+        public int Id { get; set; }
+        public int CompanyId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public string SalaryRange { get; set; } = string.Empty;
+        public int Applicants { get; set; }
+        public string? YearsOfExperienceNeeded { get; set; }
+        public DateTime? PostedDate { get; set; }
+        public DateTime? ClosingDate { get; set; }
+        public string SkillsNeeded { get; set; } = string.Empty;
+        public string DescriptionAboutTheRole { get; set; } = string.Empty;
+        public string Responsibilities { get; set; } = string.Empty;
+        public string Requirements { get; set; } = string.Empty;
+        public string DescriptionAboutTheCompany { get; set; } = string.Empty;
+        public string Status { get; set; } = "Open";
+        public string? CompanyName { get; set; }
+    }
+}
