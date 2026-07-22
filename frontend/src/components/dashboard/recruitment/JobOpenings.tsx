@@ -1,6 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { CANDIDATES, type Candidate } from "../../../data";
-import { useAuth } from "../../../context/AuthContext";
 
 interface JobOpening {
   id: string;
@@ -21,7 +20,17 @@ interface JobOpening {
   urgent?: boolean;
 }
 
-const SEED_JOBS: JobOpening[] = []; // Cleared mock data to use live API
+const SEED_JOBS: JobOpening[] = [
+  { id: "JOB-1042", title: "Senior Frontend Engineer", department: "Engineering", location: "Remote · US", type: "Full-time", level: "Senior", status: "Open", applicants: 87, shortlisted: 24, inInterview: 12, offers: 2, postedAt: "2026-03-12", closingAt: "2026-04-30", salary: "$140k – $180k", description: "Build delightful UI experiences across our React-based analytics platform.", urgent: true },
+  { id: "JOB-1041", title: "Product Designer", department: "Design", location: "New York, NY", type: "Full-time", level: "Mid", status: "Open", applicants: 56, shortlisted: 18, inInterview: 7, offers: 0, postedAt: "2026-03-08", closingAt: "2026-04-25", salary: "$110k – $140k", description: "Lead end-to-end design for our newest customer-facing workflows." },
+  { id: "JOB-1040", title: "Data Engineer", department: "Data", location: "Remote · EU", type: "Full-time", level: "Senior", status: "Open", applicants: 42, shortlisted: 11, inInterview: 4, offers: 1, postedAt: "2026-03-01", closingAt: "2026-05-15", salary: "€75k – €95k", description: "Architect and maintain our petabyte-scale data pipelines." },
+  { id: "JOB-1039", title: "Technical Product Manager", department: "Product", location: "London, UK", type: "Full-time", level: "Lead", status: "Open", applicants: 63, shortlisted: 19, inInterview: 8, offers: 0, postedAt: "2026-02-22", closingAt: "2026-04-18", salary: "£90k – £120k", description: "Drive technical strategy for our enterprise integration platform." },
+  { id: "JOB-1038", title: "Growth Marketing Lead", department: "Marketing", location: "San Francisco, CA", type: "Full-time", level: "Senior", status: "On Hold", applicants: 34, shortlisted: 8, inInterview: 3, offers: 0, postedAt: "2026-02-18", closingAt: "2026-05-01", salary: "$130k – $165k", description: "Own the growth funnel from acquisition to activation." },
+  { id: "JOB-1037", title: "Backend Engineer", department: "Engineering", location: "Berlin, DE", type: "Contract", level: "Mid", status: "Open", applicants: 51, shortlisted: 14, inInterview: 6, offers: 1, postedAt: "2026-02-15", closingAt: "2026-04-22", salary: "€60k – €80k", description: "Build robust APIs powering our platform's core services." },
+  { id: "JOB-1036", title: "Sales Development Rep", department: "Sales", location: "Austin, TX", type: "Full-time", level: "Junior", status: "Open", applicants: 92, shortlisted: 28, inInterview: 11, offers: 3, postedAt: "2026-02-10", closingAt: "2026-05-10", salary: "$55k – $70k + commission", description: "Drive top-of-funnel qualified meetings for the enterprise sales team.", urgent: true },
+  { id: "JOB-1035", title: "DevOps Engineer", department: "Engineering", location: "Remote · US", type: "Full-time", level: "Senior", status: "Closed", applicants: 38, shortlisted: 12, inInterview: 0, offers: 0, postedAt: "2026-01-28", closingAt: "2026-03-15", salary: "$150k – $185k", description: "Own infrastructure, CI/CD, and reliability for our cloud platform." },
+  { id: "JOB-1034", title: "UX Researcher", department: "Design", location: "Toronto, CA", type: "Part-time", level: "Mid", status: "Draft", applicants: 0, shortlisted: 0, inInterview: 0, offers: 0, postedAt: "2026-04-02", closingAt: "2026-05-20", salary: "$70k – $90k (pro-rated)", description: "Run discovery research to inform product decisions across teams." },
+];
 
 const STATUS_STYLES: Record<JobOpening["status"], string> = {
   Open: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 ring-1 ring-inset ring-emerald-500/30",
@@ -39,38 +48,7 @@ interface Props {
 }
 
 export default function JobOpenings({ dark, onViewProfile }: Props) {
-  const { token } = useAuth();
   const [jobs, setJobs] = useState<JobOpening[]>(SEED_JOBS);
-
-  useEffect(() => {
-    fetch('/api/jobs')
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          const apiJobs: JobOpening[] = data.map(j => ({
-            id: `JOB-${j.id}`,
-            title: j.title || 'Untitled',
-            department: j.category || 'Engineering',
-            location: j.location || 'Remote',
-            type: (j.type as any) || 'Full-time',
-            level: 'Mid',
-            status: (j.status as any) || 'Open',
-            applicants: j.applicants || 0,
-            shortlisted: 0,
-            inInterview: 0,
-            offers: 0,
-            postedAt: j.postedDate || new Date().toISOString().slice(0, 10),
-            closingAt: j.closingDate || "",
-            salary: j.salaryRange || "",
-            description: j.descriptionAboutTheRole || j.description || "",
-            urgent: false
-          }));
-          setJobs(apiJobs.reverse());
-        }
-      })
-      .catch(console.error);
-  }, []);
-
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
@@ -200,79 +178,22 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
     setShowForm(true);
   };
 
-  const saveJob = async () => {
+  const saveJob = () => {
     if (!form.title.trim()) return;
-
-    try {
-      const isEdit = !!editingId;
-      const url = isEdit ? `/api/jobs/${editingId.replace('JOB-', '')}` : `/api/jobs`;
-      const method = isEdit ? 'PUT' : 'POST';
-
-      const payload = {
-        title: form.title,
-        description: form.description,
-        requiredSkills: "",
-        location: form.location,
-        salaryRange: form.salary,
-        type: form.type,
-        companyId: 1, // Defaulting to 1 for HM since company context is simplified in this flow
-        closingDate: form.closingAt ? new Date(form.closingAt).toISOString() : null,
-        descriptionAboutTheCompany: "",
-        responsibilities: "",
-        requirements: ""
-      };
-
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) throw new Error("Failed to save job");
-      const savedJob = await res.json();
-
+    if (editingId) {
+      setJobs((prev) => prev.map((j) => (j.id === editingId ? { ...j, ...form } : j)));
+    } else {
       const newJob: JobOpening = {
-        id: `JOB-${savedJob.id}`,
-        title: savedJob.title,
-        department: savedJob.category || form.department,
-        location: savedJob.location,
-        type: savedJob.type as any,
-        level: form.level,
-        status: savedJob.status || "Open",
-        applicants: savedJob.applicants || 0,
+        id: `JOB-${Math.floor(1043 + Math.random() * 1000)}`,
+        applicants: 0,
         shortlisted: 0,
         inInterview: 0,
         offers: 0,
-        postedAt: savedJob.postedDate || new Date().toISOString().slice(0, 10),
-        closingAt: form.closingAt,
-        salary: savedJob.salaryRange || "",
-        description: savedJob.descriptionAboutTheRole || form.description,
-        urgent: form.urgent
+        ...form,
       };
-
-      if (isEdit) {
-        setJobs(prev => prev.map(j => j.id === editingId ? newJob : j));
-      } else {
-        setJobs(prev => [newJob, ...prev]);
-      }
-      setShowForm(false);
-    } catch (e) {
-      console.error(e);
-      // Fallback
-      if (editingId) {
-        setJobs((prev) => prev.map((j) => (j.id === editingId ? { ...j, ...form } : j)));
-      } else {
-        const newJob: JobOpening = {
-          id: `JOB-${Math.floor(1043 + Math.random() * 1000)}`,
-          applicants: 0, shortlisted: 0, inInterview: 0, offers: 0, ...form,
-        };
-        setJobs((prev) => [newJob, ...prev]);
-      }
-      setShowForm(false);
+      setJobs((prev) => [newJob, ...prev]);
     }
+    setShowForm(false);
   };
 
   const closeJob = (id: string) => {
@@ -292,8 +213,9 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
             {/* Header: Back button + Job hero */}
             <button
               onClick={() => setViewingJob(null)}
-              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-900" : "text-slate-500 hover:text-slate-900 hover:bg-white shadow-sm"
-                }`}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-900" : "text-slate-500 hover:text-slate-900 hover:bg-white shadow-sm"
+              }`}
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -412,11 +334,11 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                 {jobApplicants.map((c) => {
                   const stageAccent =
                     c.stage === "Hired" ? "#10b981" :
-                      c.stage === "Offer" ? "#f59e0b" :
-                        c.stage === "Onsite" ? "#8b5cf6" :
-                          c.stage === "Technical" ? "#6366f1" :
-                            c.stage === "Phone Screen" ? "#0ea5e9" :
-                              c.stage === "Rejected" ? "#ef4444" : "#64748b";
+                    c.stage === "Offer" ? "#f59e0b" :
+                    c.stage === "Onsite" ? "#8b5cf6" :
+                    c.stage === "Technical" ? "#6366f1" :
+                    c.stage === "Phone Screen" ? "#0ea5e9" :
+                    c.stage === "Rejected" ? "#ef4444" : "#64748b";
                   return (
                     <div
                       key={c.id}
@@ -460,8 +382,9 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                         {/* View Profile CTA */}
                         <button
                           onClick={() => onViewProfile?.(c)}
-                          className={`mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${dark ? "bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25" : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-                            }`}
+                          className={`mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                            dark ? "bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25" : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                          }`}
                         >
                           <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
@@ -573,23 +496,25 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <button
                   onClick={() => openForm(job)}
-                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${dark
-                    ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                    }`}
+                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    dark
+                      ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => toggleStatus(job.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${job.status === "Open"
-                    ? dark
-                      ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
-                      : "bg-amber-50 text-amber-700 hover:bg-amber-100"
-                    : dark
+                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    job.status === "Open"
+                      ? dark
+                        ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
+                        : "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                      : dark
                       ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
                       : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                    }`}
+                  }`}
                 >
                   {job.status === "Open" ? "Pause" : "Resume"}
                 </button>
@@ -634,8 +559,9 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
               </div>
               <button
                 onClick={() => setViewingJob(job)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${dark ? "bg-slate-800 text-indigo-400 hover:bg-slate-700" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
-                  }`}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  dark ? "bg-slate-800 text-indigo-400 hover:bg-slate-700" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                }`}
               >
                 View Applicants
                 <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -721,22 +647,24 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
 
               {/* Urgent tick */}
               <label
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${form.urgent
-                  ? dark
-                    ? "bg-red-500/10 border-red-500/40"
-                    : "bg-red-50 border-red-300"
-                  : dark
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
+                  form.urgent
+                    ? dark
+                      ? "bg-red-500/10 border-red-500/40"
+                      : "bg-red-50 border-red-300"
+                    : dark
                     ? "border-slate-800 hover:bg-slate-800/40"
                     : "border-slate-200 hover:bg-slate-50"
-                  }`}
+                }`}
               >
                 <div
-                  className={`h-5 w-5 rounded-md flex items-center justify-center border-2 transition-all flex-shrink-0 ${form.urgent
-                    ? "bg-red-500 border-red-500"
-                    : dark
+                  className={`h-5 w-5 rounded-md flex items-center justify-center border-2 transition-all flex-shrink-0 ${
+                    form.urgent
+                      ? "bg-red-500 border-red-500"
+                      : dark
                       ? "border-slate-600"
                       : "border-slate-300"
-                    }`}
+                  }`}
                 >
                   {form.urgent && (
                     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-white" fill="none" stroke="currentColor" strokeWidth="3.5">
