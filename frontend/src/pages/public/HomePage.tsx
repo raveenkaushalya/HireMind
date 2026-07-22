@@ -9,7 +9,7 @@ import Testimonials from '../../components/Testimonials';
 import FAQ from '../../components/FAQ';
 import Contact from '../../components/Contact';
 import Footer from '../../components/Footer';
-
+import AIChatbot from '../../components/AIChatbot';
 export default function HomePage() {
   return (
     <div className="min-h-screen transition-colors duration-300">
@@ -24,6 +24,7 @@ export default function HomePage() {
       <FAQ />
       <Contact />
       <Footer />
+      <AIChatbot />
     </div>
   );
 }

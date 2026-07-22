@@ -79,42 +79,7 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Newsletter */}
-        <div className={`rounded-2xl p-6 lg:p-8 mb-12 ${
-          isDark
-            ? 'bg-surface-800/50 border border-surface-700/50'
-            : 'bg-surface-50 border border-surface-200'
-        }`}>
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
-                <Mail className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h4 className={`font-display font-bold ${isDark ? 'text-white' : 'text-surface-900'}`}>
-                  Stay Updated
-                </h4>
-                <p className={`text-sm ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
-                  Get the latest jobs and AI features delivered to your inbox.
-                </p>
-              </div>
-            </div>
-            <div className="flex w-full lg:w-auto gap-3">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className={`flex-1 lg:w-64 px-4 py-3 rounded-xl text-sm outline-none border transition-colors ${
-                  isDark
-                    ? 'bg-surface-900 border-surface-700 text-white placeholder:text-surface-500 focus:border-primary-500'
-                    : 'bg-white border-surface-300 text-surface-900 placeholder:text-surface-400 focus:border-primary-500'
-                }`}
-              />
-              <button className="px-6 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold text-sm shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all duration-300 whitespace-nowrap cursor-pointer">
-                Subscribe
-              </button>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Bottom */}
         <div className={`pt-8 border-t ${isDark ? 'border-surface-800' : 'border-surface-200'}`}>

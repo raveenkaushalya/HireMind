@@ -37,17 +37,7 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #A67C00;
-  border-radius: 4px;
-}
+
 
 /* Animated gradient */
 @keyframes gradient-shift {
