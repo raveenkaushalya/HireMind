@@ -6,7 +6,7 @@ const testimonials = [
     name: 'Sarah Mitchell',
     role: 'VP of Talent, CloudScale Inc.',
     image: 'https://images.pexels.com/photos/7717254/pexels-photo-7717254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    text: 'HireMinds. reduced our time-to-hire by 60%. The AI matching is incredibly accurate — we found our entire engineering team through the platform.',
+    text: 'HireMinds. reduced our time to hire by 60%. The AI matching is incredibly accurate  we found our entire engineering team through the platform.',
     rating: 5,
   },
   {
@@ -20,7 +20,7 @@ const testimonials = [
     name: 'Dr. Emily Chen',
     role: 'Head of HR, QuantumData AI',
     image: 'https://images.pexels.com/photos/33680700/pexels-photo-33680700.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    text: 'The bias-free hiring feature is a game-changer. We\'ve built the most diverse team in our company\'s history thanks to HireMinds. intelligent screening.',
+    text: 'The bias-free hiring feature is a game changer. We\'ve built the most diverse team in our company\'s history thanks to HireMinds. intelligent screening.',
     rating: 5,
   },
 ];

@@ -18,7 +18,7 @@ const features = [
   {
     icon: FileCheck,
     title: 'Smart Resume Matching',
-    description: 'Upload job descriptions and let our AI instantly match and rank the best-fit candidates from your talent pool using NLP and deep learning.',
+    description: 'Upload job descriptions and let our AI instantly match and rank the best fit candidates from your talent pool using NLP and deep learning.',
     highlight: '10x faster',
   },
   {
@@ -42,8 +42,8 @@ const features = [
   {
     icon: BarChart3,
     title: 'Recruitment Analytics',
-    description: 'Get deep insights into your hiring pipeline with real-time dashboards, conversion metrics, and AI-powered recommendations.',
-    highlight: 'Real-time data',
+    description: 'Get deep insights into your hiring pipeline with real time dashboards, conversion metrics, and AI-powered recommendations.',
+    highlight: 'Real time data',
   },
 ];
 
@@ -84,7 +84,7 @@ export default function Features() {
             </span>
           </h2>
           <p className={`text-lg ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
-            Leverage cutting-edge artificial intelligence to transform every step of your hiring process,
+            Leverage cutting edge artificial intelligence to transform every step of your hiring process,
             from candidate sourcing to final placement.
           </p>
         </div>

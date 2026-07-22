@@ -75,7 +75,7 @@ export default function Hero() {
               isDark ? 'text-surface-400' : 'text-surface-500'
             }`}>
               Connect top talent with dream companies using our advanced AI matching engine. 
-              Resume scoring, intelligent job matching, and smart search — all in one platform.
+              Resume scoring, intelligent job matching, and smart search all in one platform.
             </p>
 
             {/* Search Bar */}
