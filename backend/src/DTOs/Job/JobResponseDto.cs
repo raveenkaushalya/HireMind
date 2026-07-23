@@ -20,6 +20,7 @@ namespace RecruitmentPlatform.API.DTOs.Job
         public string DescriptionAboutTheCompany { get; set; } = string.Empty;
         public string? MinQualification { get; set; }
         public string Status { get; set; } = "Open";
+        public bool IsUrgent { get; set; } = false;
         public string? CompanyName { get; set; }
     }
 }

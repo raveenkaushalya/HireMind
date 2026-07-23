@@ -3,7 +3,7 @@ import { useState } from "react";
 interface ScheduleInterviewModalProps {
   dark: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (details: { date: Date, time: string, feedback: string }) => void;
   candidateName: string;
 }
 
@@ -51,11 +51,11 @@ export function ScheduleInterviewModal({
   };
 
   const handleConfirm = () => {
-    if (selectedDate && selectedTime) onConfirm();
+    if (selectedDate && selectedTime) onConfirm({ date: selectedDate, time: selectedTime, feedback });
   };
 
   const days = getDaysInMonth(currentMonth);
-  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   return (
     <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-0 sm:p-4">
@@ -64,9 +64,8 @@ export function ScheduleInterviewModal({
 
       {/* Modal - scrollable */}
       <div
-        className={`relative w-full sm:max-w-lg max-h-screen sm:max-h-[92vh] overflow-y-auto sm:rounded-2xl border shadow-2xl ${
-          dark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
-        }`}
+        className={`relative w-full sm:max-w-lg max-h-screen sm:max-h-[92vh] overflow-y-auto sm:rounded-2xl border shadow-2xl ${dark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+          }`}
       >
         {/* Header */}
         <div className={`sticky top-0 z-10 flex items-center justify-between px-5 py-3 border-b backdrop-blur-md ${dark ? "bg-slate-900/95 border-slate-800" : "bg-white/95 border-slate-200"}`}>
@@ -114,7 +113,7 @@ export function ScheduleInterviewModal({
 
               {/* Day headers */}
               <div className="grid grid-cols-7 gap-0.5 mb-1.5">
-                {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d) => (
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
                   <div key={d} className={`text-[10px] font-medium text-center py-0.5 ${dark ? "text-slate-500" : "text-slate-400"}`}>{d}</div>
                 ))}
               </div>
@@ -127,15 +126,14 @@ export function ScheduleInterviewModal({
                       key={idx}
                       onClick={() => !isPastDate(date) && setSelectedDate(date)}
                       disabled={isPastDate(date)}
-                      className={`aspect-square rounded-md text-xs font-medium transition-all ${
-                        isPastDate(date)
+                      className={`aspect-square rounded-md text-xs font-medium transition-all ${isPastDate(date)
                           ? dark ? "text-slate-700 cursor-not-allowed" : "text-slate-300 cursor-not-allowed"
                           : selectedDate?.getTime() === date.getTime()
-                          ? "bg-indigo-500 text-white"
-                          : isToday(date)
-                          ? dark ? "bg-slate-800 text-indigo-400 hover:bg-slate-700" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
-                          : dark ? "hover:bg-slate-800 text-slate-300" : "hover:bg-slate-200 text-slate-700"
-                      }`}
+                            ? "bg-indigo-500 text-white"
+                            : isToday(date)
+                              ? dark ? "bg-slate-800 text-indigo-400 hover:bg-slate-700" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                              : dark ? "hover:bg-slate-800 text-slate-300" : "hover:bg-slate-200 text-slate-700"
+                        }`}
                     >
                       {date.getDate()}
                     </button>
@@ -157,11 +155,10 @@ export function ScheduleInterviewModal({
                 <button
                   key={time}
                   onClick={() => setSelectedTime(time)}
-                  className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
-                    selectedTime === time
+                  className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${selectedTime === time
                       ? "bg-indigo-500 text-white"
                       : dark ? "bg-slate-800 text-slate-300 hover:bg-slate-700" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
+                    }`}
                 >
                   {time}
                 </button>
@@ -179,9 +176,8 @@ export function ScheduleInterviewModal({
               onChange={(e) => setFeedback(e.target.value)}
               rows={3}
               placeholder="Add any notes or feedback..."
-              className={`w-full px-3 py-2 rounded-xl border text-xs resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                dark ? "bg-slate-950/50 border-slate-800 text-slate-200 placeholder-slate-500" : "bg-white border-slate-200 text-slate-900 placeholder-slate-400"
-              }`}
+              className={`w-full px-3 py-2 rounded-xl border text-xs resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 ${dark ? "bg-slate-950/50 border-slate-800 text-slate-200 placeholder-slate-500" : "bg-white border-slate-200 text-slate-900 placeholder-slate-400"
+                }`}
             />
           </div>
         </div>
@@ -197,11 +193,10 @@ export function ScheduleInterviewModal({
           <button
             onClick={handleConfirm}
             disabled={!selectedDate || !selectedTime}
-            className={`px-5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              !selectedDate || !selectedTime
+            className={`px-5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${!selectedDate || !selectedTime
                 ? "bg-indigo-500/50 cursor-not-allowed text-white/50"
                 : "bg-indigo-500 hover:bg-indigo-600 text-white"
-            }`}
+              }`}
           >
             Confirm Schedule
           </button>

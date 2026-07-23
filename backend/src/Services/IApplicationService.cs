@@ -9,6 +9,6 @@ namespace RecruitmentPlatform.API.Services
         Task<IEnumerable<ApplicationResponseDto>> GetByCandidateIdAsync(int candidateId);
         Task<IEnumerable<ApplicationResponseDto>> GetByJobIdAsync(int jobPostingId);
         Task<ApplicationResponseDto> CreateAsync(ApplicationRequestDto dto);
-        Task<ApplicationResponseDto?> UpdateStageAsync(int id, string newStage, int userId);
+        Task<ApplicationResponseDto?> UpdateStageAsync(int id, UpdateStageDto dto, int userId);
     }
 }

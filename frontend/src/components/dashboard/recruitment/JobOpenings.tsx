@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { CANDIDATES, type Candidate } from "../../../data";
+import { type Candidate } from "../../../data";
 import { useAuth } from "../../../context/AuthContext";
+import { SourceDonutChart, StageFunnelChart } from "./Charts";
 
 interface JobOpening {
   id: string;
@@ -40,6 +41,11 @@ const STATUS_STYLES: Record<JobOpening["status"], string> = {
 
 const TYPE_OPTIONS = ["All", "Full-time", "Part-time", "Remote", "Hybrid", "Onsite"];
 const STATUS_OPTIONS = ["All", "Open", "On Hold", "Closed", "Draft"];
+const CATEGORY_OPTIONS = [
+  'IT & Technology', 'Engineering', 'Healthcare & Pharma', 'Education',
+  'Banking & Finance', 'Human Resources', 'Design & Marketing',
+  'Logistics & Supply Chain', 'Apparel & Manufacturing', 'Hospitality & Tourism', 'Other'
+];
 
 interface Props {
   dark: boolean;
@@ -54,7 +60,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
   const mapApiJob = (j: any): JobOpening => ({
     id: `JOB-${j.id}`,
     title: j.title || 'Untitled',
-    category: j.category || 'IT / Technology',
+    category: j.category || 'IT & Technology',
     location: j.location || 'Colombo, Sri Lanka',
     type: (j.type as any) || 'Full-time',
     level: 'Mid',
@@ -70,7 +76,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
     responsibilities: j.responsibilities || '',
     requirements: j.requirements || '',
     descriptionAboutTheCompany: j.descriptionAboutTheCompany || '',
-    urgent: false,
+    urgent: j.isUrgent || false,
     yearsOfExperienceNeeded: j.yearsOfExperienceNeeded || '',
     minQualification: j.minQualification || '',
     skillsNeeded: j.skillsNeeded ? j.skillsNeeded.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
@@ -116,7 +122,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
 
   const [form, setForm] = useState<Omit<JobOpening, "id" | "applicants" | "shortlisted" | "inInterview" | "offers">>({
     title: "",
-    category: "IT / Technology",
+    category: "IT & Technology",
     location: "Colombo, Sri Lanka",
     type: "Full-time",
     level: "Mid",
@@ -140,11 +146,50 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
   const [applicantSortDir, setApplicantSortDir] = useState<"asc" | "desc">("desc");
   const [applicantStageFilter, setApplicantStageFilter] = useState<string>("All");
 
-  const jobApplicantsPool = useMemo(() => {
-    if (!viewingJob) return [];
-    const matches = CANDIDATES.filter(c => c.location === viewingJob.location);
-    return matches.length > 0 ? matches.slice(0, viewingJob.applicants) : CANDIDATES.slice(0, viewingJob.applicants);
-  }, [viewingJob]);
+  const [jobApplicantsPool, setJobApplicantsPool] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!viewingJob) {
+      setJobApplicantsPool([]);
+      return;
+    }
+    const jobId = viewingJob.id.replace('JOB-', '');
+    fetch(`/api/applications/by-job/${jobId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(res => res.json())
+      .then((data: any[]) => {
+        if (Array.isArray(data)) {
+          const mapped = data.map(a => ({
+            id: `APP-${a.id}`,
+            candidateId: a.candidateId,
+            name: a.candidateName || 'Unknown',
+            email: a.candidateEmail || '',
+            phone: a.candidatePhone || '',
+            role: a.candidateCurrentJobTitle || '',
+            department: viewingJob.category,
+            seniority: a.candidateExperienceLevel || 'Mid',
+            source: 'API',
+            stage: a.status || 'Applied',
+            score: 0, // AI Score mapped dynamically or kept 0 if not stored
+            yearsExp: parseInt(a.candidateExperienceLevel) || 0,
+            location: a.candidateLocation || 'Unknown',
+            appliedAt: a.dateSubmitted,
+            shortlistedAt: a.dateSubmitted,
+            daysInPipeline: Math.floor((new Date().getTime() - new Date(a.dateSubmitted).getTime()) / (1000 * 3600 * 24)),
+            status: a.status === 'Rejected' ? 'Rejected' : a.status === 'Hired' ? 'Hired' : 'Active',
+            avatar: '#3b82f6',
+            education: a.candidateEducation || '',
+            previousCompany: '',
+            resumeUrl: a.candidateResumeUrl || '',
+            skills: typeof a.candidateSkills === 'string' ? a.candidateSkills.split(',').map((s: string) => s.trim()) : (a.candidateSkills || []),
+            interviewHistory: []
+          }));
+          setJobApplicantsPool(mapped);
+        }
+      })
+      .catch(console.error);
+  }, [viewingJob, token]);
 
   const jobApplicants = useMemo(() => {
     let list = [...jobApplicantsPool];
@@ -208,7 +253,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
       setEditingId(job.id);
       setForm({
         title: job.title,
-        category: job.category || "IT / Technology",
+        category: job.category || "IT & Technology",
         location: (job as any).location || "Colombo, Sri Lanka",
         type: job.type,
         level: job.level,
@@ -229,7 +274,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
       setEditingId(null);
       setForm({
         title: "",
-        category: "IT / Technology",
+        category: "IT & Technology",
         location: "Colombo, Sri Lanka",
         type: "Full-time",
         level: "Mid",
@@ -279,6 +324,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
         yearsOfExperienceNeeded: form.yearsOfExperienceNeeded,
         minQualification: form.minQualification,
         status: form.status,
+        isUrgent: form.urgent,
       };
 
       const res = await fetch(url, {
@@ -299,7 +345,8 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
       const newJob: JobOpening = {
         id: `JOB-${savedJob.id}`,
         title: savedJob.title,
-        location: savedJob.category || form.location,
+        category: savedJob.category || form.category,
+        location: savedJob.location || form.location,
         type: savedJob.type as any,
         level: form.level,
         status: savedJob.status || "Open",
@@ -343,7 +390,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
         }
       });
       if (res.ok) {
-        setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, status: "Closed" } : j)));
+        setJobs((prev) => prev.filter((j) => j.id !== id));
       }
     } catch (e) {
       console.error("Failed to close job", e);
@@ -432,6 +479,36 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
               </div>
             </div>
 
+            {/* Applicant Mock Charts */}
+            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4`}>
+              <div className={`rounded-2xl border p-5 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
+                <div className="mb-3">
+                  <h3 className="font-bold text-sm">Applicant Sources</h3>
+                  <p className={`text-xs mt-0.5 ${dark ? "text-slate-400" : "text-slate-500"}`}>Where applicants applied from</p>
+                </div>
+                <SourceDonutChart dark={dark} data={[
+                  { name: "LinkedIn", value: 40 },
+                  { name: "Direct", value: 30 },
+                  { name: "Referral", value: 15 },
+                  { name: "Agency", value: 15 },
+                ]} />
+              </div>
+              <div className={`rounded-2xl border p-5 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
+                <div className="mb-3">
+                  <h3 className="font-bold text-sm">Application Funnel</h3>
+                  <p className={`text-xs mt-0.5 ${dark ? "text-slate-400" : "text-slate-500"}`}>Current pipeline stages</p>
+                </div>
+                <StageFunnelChart dark={dark} data={[
+                  { name: "Applied", value: applicantStats.total || 45 },
+                  { name: "Shortlisted", value: applicantStats.shortlisted || 20 },
+                  { name: "Phone Screen", value: 12 },
+                  { name: "Technical", value: applicantStats.inInterview || 5 },
+                  { name: "Offer", value: applicantStats.offer || 2 },
+                  { name: "Hired", value: 1 },
+                ]} />
+              </div>
+            </div>
+
             <div className={`rounded-2xl border p-3 flex flex-wrap items-center gap-2 ${dark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
               <div className="relative flex-1 min-w-[220px]">
                 <svg viewBox="0 0 24 24" className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${dark ? "text-slate-500" : "text-slate-400"}`} fill="none" stroke="currentColor" strokeWidth="2">
@@ -507,7 +584,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                       <div>
                         <div className="flex items-start gap-3">
                           <div className="h-11 w-11 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-sm flex-shrink-0" style={{ background: c.avatar }}>
-                            {c.name.split(" ").map(n => n[0]).join("")}
+                            {c.name.split(" ").map((n: string) => n[0]).join("")}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-bold truncate">{c.name}</p>
@@ -753,7 +830,10 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                 </div>
                 <div>
                   <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Category / Industry</label>
-                  <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="e.g. IT, Healthcare" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100" : "bg-white border border-slate-200 text-slate-900"}`}>
+                    <option value="">Select industry</option>
+                    {CATEGORY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
               </div>
 
@@ -829,8 +909,17 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                   />
                 </div>
                 <div>
-                  <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Closing Date</label>
-                  <input type="date" value={form.closingAt} onChange={(e) => setForm({ ...form, closingAt: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+                  <label className="flex items-center gap-2 cursor-pointer mt-4">
+                    <input
+                      type="checkbox"
+                      checked={form.urgent}
+                      onChange={(e) => setForm({ ...form, urgent: e.target.checked })}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500"
+                    />
+                    <span className={`text-xs font-semibold ${dark ? "text-slate-300" : "text-slate-700"}`}>
+                      Mark as Urgent Job
+                    </span>
+                  </label>
                 </div>
               </div>
 

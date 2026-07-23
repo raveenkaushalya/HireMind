@@ -9,12 +9,17 @@ import FAQ from '../../components/FAQ';
 import Contact from '../../components/Contact';
 import Footer from '../../components/Footer';
 import AIChatbot from '../../components/AIChatbot';
+import { useState } from 'react';
+
 export default function HomePage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLocation, setSearchLocation] = useState("");
+
   return (
     <div className="min-h-screen transition-colors duration-300">
       <Navbar />
-      <Hero />
-      <JobListings />
+      <Hero searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchLocation={searchLocation} setSearchLocation={setSearchLocation} />
+      <JobListings searchQuery={searchQuery} searchLocation={searchLocation} />
       <Features />
       <Stats />
       <HowItWorks />

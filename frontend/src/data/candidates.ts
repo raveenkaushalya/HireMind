@@ -1,6 +1,7 @@
 // Realistic sample data generator for the Shortlisted Candidates dashboard
 
 export type Stage =
+  | "Applied"
   | "Shortlisted"
   | "Phone Screen"
   | "Technical"
@@ -50,7 +51,7 @@ export interface Candidate {
   appliedAt: string; // ISO date
   shortlistedAt: string; // ISO
   daysInPipeline: number;
-  status: "Active" | "On Hold" | "Rejected" | "Offer" | "Hired";
+  status: "Active" | "On Hold" | "Rejected" | "Offer" | "Hired" | "Under Review";
   avatar: string; // initials color hex
   // Extended profile details
   email: string;
@@ -62,6 +63,7 @@ export interface Candidate {
   skills: string[];
   summary: string;
   resumeMatch: number; // 0-100
+  resumeUrl?: string;
   interviewHistory: InterviewEvent[];
 }
 

@@ -10,5 +10,6 @@ namespace RecruitmentPlatform.API.DTOs.HiringManager
         public int? UserId { get; set; }
         public DateTime? JoinedDate { get; set; }
         public string Status { get; set; } = "Pending";
+        public string? CompanyName { get; set; }
     }
 }

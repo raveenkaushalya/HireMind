@@ -44,7 +44,7 @@ function SkillBar({ name, level, isDark }: { name: string; level: number; isDark
 }
 
 // ── Applied Jobs Data ─────────────────────────────────────────────────
-type ApplicationStatus = 'Applied' | 'Under Review' | 'Interview' | 'Offered' | 'Rejected';
+type ApplicationStatus = 'Applied' | 'Under Review' | 'Interview' | 'Offered' | 'Hired' | 'Rejected';
 
 interface TimelineEvent {
   date: string;
@@ -105,7 +105,7 @@ export default function CandidateDashboard() {
       location: 'Remote' as string,
       salary: 'Competitive' as string,
       appliedDate: new Date(app.dateSubmitted).toLocaleDateString() as string,
-      status: (app.status || 'Applied') as ApplicationStatus,
+      status: (app.status === 'Offer' ? 'Offered' : app.status === 'Hired' ? 'Hired' : app.status === 'Technical' || app.status === 'Onsite' ? 'Interview' : app.status || 'Applied') as ApplicationStatus,
       aiScore: parsed?.overallScore || Math.floor(Math.random() * 20 + 75),
       type: 'Full-time' as string,
       lastUpdate: new Date().toLocaleDateString() as string,
@@ -464,6 +464,7 @@ export default function CandidateDashboard() {
             'Under Review': { color: isDark ? 'text-amber-400' : 'text-amber-600', bg: isDark ? 'bg-amber-500/15 border-amber-500/20' : 'bg-amber-50 border-amber-200', icon: Eye },
             'Interview': { color: isDark ? 'text-purple-400' : 'text-purple-600', bg: isDark ? 'bg-purple-500/15 border-purple-500/20' : 'bg-purple-50 border-purple-200', icon: CalendarDays },
             'Offered': { color: isDark ? 'text-emerald-400' : 'text-emerald-600', bg: isDark ? 'bg-emerald-500/15 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200', icon: CheckCircle2 },
+            'Hired': { color: isDark ? 'text-teal-400' : 'text-teal-600', bg: isDark ? 'bg-teal-500/15 border-teal-500/20' : 'bg-teal-50 border-teal-200', icon: CheckCircle2 },
             'Rejected': { color: isDark ? 'text-red-400' : 'text-red-600', bg: isDark ? 'bg-red-500/15 border-red-500/20' : 'bg-red-50 border-red-200', icon: XCircle },
           };
 
@@ -472,7 +473,7 @@ export default function CandidateDashboard() {
             applied: appliedJobs.filter(j => j.status === 'Applied').length,
             review: appliedJobs.filter(j => j.status === 'Under Review').length,
             interview: appliedJobs.filter(j => j.status === 'Interview').length,
-            offered: appliedJobs.filter(j => j.status === 'Offered').length,
+            offered: appliedJobs.filter(j => j.status === 'Offered' || j.status === 'Hired').length,
             rejected: appliedJobs.filter(j => j.status === 'Rejected').length,
           };
 
@@ -535,8 +536,8 @@ export default function CandidateDashboard() {
 
                 <div className="space-y-3">
                   {appliedJobs.map(job => {
-                    const sc = statusConfig[job.status];
-                    const StatusIcon = sc.icon;
+                    const sc = statusConfig[job.status as ApplicationStatus] || statusConfig['Applied'];
+                    const StatusIcon = sc.icon || Clock;
                     return (
                       <div key={job.id} onClick={() => setSelectedJob(job)} className={`${cardCls} group hover:-translate-y-0.5 transition-all duration-200 cursor-pointer`}>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-4">

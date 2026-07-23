@@ -104,6 +104,18 @@
           }
         }
       },
+      "Ical.Net/5.2.3": {
+        "type": "package",
+        "dependencies": {
+          "NodaTime": "3.2.2"
+        },
+        "compile": {
+          "lib/net8.0/Ical.Net.dll": {}
+        },
+        "runtime": {
+          "lib/net8.0/Ical.Net.dll": {}
+        }
+      },
       "MailKit/4.17.0": {
         "type": "package",
         "dependencies": {
@@ -950,6 +962,19 @@
           }
         }
       },
+      "NodaTime/3.2.2": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/NodaTime.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/NodaTime.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
       "OpenAI/2.12.0": {
         "type": "package",
         "dependencies": {
@@ -1618,6 +1643,24 @@
         "lib/netstandard2.0/Humanizer.dll",
         "lib/netstandard2.0/Humanizer.xml",
         "logo.png"
+      ]
+    },
+    "Ical.Net/5.2.3": {
+      "sha512": "zROvmrRPKqND0e0Bt/wSY+d8iYtL4+sP9mORyjT/ySBiIDfik4iovTjS+L9PFg+zoXfkJ5eBTHK2lX9c7lganw==",
+      "type": "package",
+      "path": "ical.net/5.2.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "assets/icon.png",
+        "assets/logo.png",
+        "assets/readme.md",
+        "ical.net.5.2.3.nupkg.sha512",
+        "ical.net.nuspec",
+        "lib/net6.0/Ical.Net.dll",
+        "lib/net8.0/Ical.Net.dll",
+        "lib/netstandard2.0/Ical.Net.dll",
+        "lib/netstandard2.1/Ical.Net.dll"
       ]
     },
     "MailKit/4.17.0": {
@@ -3646,6 +3689,27 @@
         "packageIcon.png"
       ]
     },
+    "NodaTime/3.2.2": {
+      "sha512": "dmju5W0UYC3QP/UJM0juKAZkH0HSDMp0gH91A0+mT9M0kgyM2Jm67hUZPl/WRQLq8Lijjqmdk8kyAViWFWM7dA==",
+      "type": "package",
+      "path": "nodatime/3.2.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net6.0/NodaTime.dll",
+        "lib/net6.0/NodaTime.pdb",
+        "lib/net6.0/NodaTime.xml",
+        "lib/net8.0/NodaTime.dll",
+        "lib/net8.0/NodaTime.pdb",
+        "lib/net8.0/NodaTime.xml",
+        "lib/netstandard2.0/NodaTime.dll",
+        "lib/netstandard2.0/NodaTime.pdb",
+        "lib/netstandard2.0/NodaTime.xml",
+        "nodatime.3.2.2.nupkg.sha512",
+        "nodatime.nuspec"
+      ]
+    },
     "OpenAI/2.12.0": {
       "sha512": "rKyVV0sJPo7pn0Ya5dgRs5ggGbjvnKcYSvYV2jITKgFIfeo2XHjgyi6UqNT/OnF0YBqjsNpPdgM6QjzYczWplg==",
       "type": "package",
@@ -4403,12 +4467,14 @@
     "net10.0": [
       "BCrypt.Net-Next >= 4.2.0",
       "DocumentFormat.OpenXml >= 3.5.1",
+      "Ical.Net >= 5.2.3",
       "MailKit >= 4.17.0",
       "Microsoft.AspNetCore.Authentication.JwtBearer >= 10.0.9",
       "Microsoft.AspNetCore.OpenApi >= 10.0.9",
       "Microsoft.Data.SqlClient >= 7.0.2",
       "Microsoft.EntityFrameworkCore.SqlServer >= 10.0.9",
       "Microsoft.EntityFrameworkCore.Tools >= 10.0.9",
+      "MimeKit >= 4.17.0",
       "OpenAI >= 2.12.0",
       "OpenAI.ChatClient >= 1.0.0",
       "PdfPig >= 0.1.15",
@@ -4477,6 +4543,10 @@
             "target": "Package",
             "version": "[3.5.1, )"
           },
+          "Ical.Net": {
+            "target": "Package",
+            "version": "[5.2.3, )"
+          },
           "MailKit": {
             "target": "Package",
             "version": "[4.17.0, )"
@@ -4502,6 +4572,10 @@
             "suppressParent": "All",
             "target": "Package",
             "version": "[10.0.9, )"
+          },
+          "MimeKit": {
+            "target": "Package",
+            "version": "[4.17.0, )"
           },
           "OpenAI": {
             "target": "Package",

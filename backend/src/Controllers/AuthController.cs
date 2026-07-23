@@ -25,8 +25,15 @@ namespace RecruitmentPlatform.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
         {
-            var result = await _authService.LoginAsync(dto);
-            return Ok(new { result.Token, result.Role, name = result.Name, result.UserId, result.Email });
+            try
+            {
+                var result = await _authService.LoginAsync(dto);
+                return Ok(new { result.Token, result.Role, name = result.Name, result.UserId, result.Email });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
         }
 
         [HttpPost("company-setup-password")]

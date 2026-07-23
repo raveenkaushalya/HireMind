@@ -1,0 +1,1 @@
+{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","title":"One or more validation errors occurred.","status":400,"errors":{"phone":["Invalid phone number format."]},"traceId":"00-a706b100454504ccc91d520cc5aefc9d-a33a2b493d9e35bd-00"}

@@ -225,17 +225,6 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const toggleRecruiterStatus = (id: string) =>
     setRecruiters((p) => p.map((r) => (r.id === id ? { ...r, status: r.status === "Active" ? "Suspended" : "Active" } : r)));
 
-  const changeRecruiterRole = (id: string) => {
-    const roles: Role[] = ["Recruiter", "Hiring Manager", "Viewer"];
-    setRecruiters((p) =>
-      p.map((r) => {
-        if (r.id !== id) return r;
-        const i = roles.indexOf(r.role);
-        return { ...r, role: roles[(i + 1) % roles.length] };
-      })
-    );
-  };
-
   const assignCompanyToRecruiter = (recruiterId: string, companyId: string) => {
     setRecruiters((p) =>
       p.map((r) =>
@@ -539,7 +528,6 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <InputField label="Full Name" value={recruiterForm.name} onChange={(v) => setRecruiterForm({ ...recruiterForm, name: v })} placeholder="Ava Johnson" />
                   <InputField label="Work Email" value={recruiterForm.email} onChange={(v) => setRecruiterForm({ ...recruiterForm, email: v })} placeholder="ava.j@hireminds.co" type="email" />
-                  <SelectField label="Role" value={recruiterForm.role} onChange={(v) => setRecruiterForm({ ...recruiterForm, role: v as Role })} options={["Recruiter", "Hiring Manager", "Viewer"] as string[]} />
                   <SelectField label="Assign to Client Company" value={recruiterForm.companyId} onChange={(v) => setRecruiterForm({ ...recruiterForm, companyId: v })} options={["", ...companies.filter(c => c.status !== "Rejected").map(c => c.id)]} formatOption={(id) => id === "" ? "Unassigned" : companies.find(c => c.id === id)?.name ?? id} />
                 </div>
                 <div className="mt-4 flex items-center gap-2">
@@ -568,10 +556,6 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-bold">{r.name}</p>
-                        <button onClick={() => changeRecruiterRole(r.id)} title="Click to cycle roles" className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all hover:brightness-110 cursor-pointer ${ROLE_STYLES[r.role]}`}>
-                          {r.role}
-                          <svg viewBox="0 0 24 24" className="h-2.5 w-2.5 ml-0.5" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                        </button>
                       </div>
                       <p className="text-xs mt-0.5 text-slate-400">{r.email}</p>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -778,7 +762,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       )}
 
       <footer className="mt-10 text-center text-xs text-slate-500 pb-4">
-        Admin Portal v2.1 · All actions are logged and monitored
+      HireMinds · Admin Portal
       </footer>
     </div>
   );
@@ -1200,7 +1184,6 @@ function CompanyOverview({ company, recruiters }: { company: Company; recruiters
           <InfoItem label="Industry">{company.industry}</InfoItem>
           <InfoItem label="Primary Contact">{company.contact}</InfoItem>
           <InfoItem label="Email">{company.email}</InfoItem>
-          <InfoItem label="Website">{company.website || "—"}</InfoItem>
           <InfoItem label="Location">{company.location || "—"}</InfoItem>
           <InfoItem label="Size">{company.size || "—"}</InfoItem>
           <InfoItem label="Registered">{new Date(company.registeredAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}</InfoItem>
@@ -1245,12 +1228,15 @@ function CompanyEditForm({ edit, setEdit, editSave, onSave }: { edit: Record<str
       <SelectFieldShim
         label="Industry"
         value={edit.industry ?? ""}
-        options={["Enterprise SaaS", "AI Infrastructure", "Content Platform", "HealthTech", "FinTech", "E-commerce", "Manufacturing", "Consulting"]}
+        options={[
+          'IT & Technology', 'Engineering', 'Healthcare & Pharma', 'Education',
+          'Banking & Finance', 'Human Resources', 'Design & Marketing',
+          'Logistics & Supply Chain', 'Apparel & Manufacturing', 'Hospitality & Tourism', 'Other'
+        ]}
         onChange={(v) => setEdit({ ...edit, industry: v })}
       />
       <InputSimple label="Primary Contact" value={edit.contact ?? ""} onChange={(v) => setEdit({ ...edit, contact: v })} />
       <InputSimple label="Email" value={edit.email ?? ""} type="email" onChange={(v) => setEdit({ ...edit, email: v })} />
-      <InputSimple label="Website" value={edit.website ?? ""} onChange={(v) => setEdit({ ...edit, website: v })} />
       <InputSimple label="Location" value={edit.location ?? ""} onChange={(v) => setEdit({ ...edit, location: v })} />
       <SelectFieldShim
         label="Company Size"
@@ -1281,9 +1267,7 @@ function RecruiterEditForm({ edit, setEdit, editSave, onSave }: { edit: Record<s
       {editSave && <SaveOk />}
       <InputSimple label="Full Name" value={edit.name ?? ""} onChange={(v) => setEdit({ ...edit, name: v })} />
       <InputSimple label="Email" value={edit.email ?? ""} type="email" onChange={(v) => setEdit({ ...edit, email: v })} />
-      <SelectFieldShim label="Role" value={edit.role ?? "Recruiter"} options={["Recruiter", "Hiring Manager", "Viewer"]} onChange={(v) => setEdit({ ...edit, role: v })} />
       <InputSimple label="Phone" value={edit.phone ?? ""} onChange={(v) => setEdit({ ...edit, phone: v })} />
-      <InputSimple label="Location" value={edit.location ?? ""} onChange={(v) => setEdit({ ...edit, location: v })} />
       <SelectFieldShim label="Status" value={edit.status ?? "Active"} options={["Active", "Pending", "Suspended"]} onChange={(v) => setEdit({ ...edit, status: v })} />
       <div className="flex gap-2 pt-2">
         <button onClick={onSave} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 shadow-lg shadow-amber-500/25 transition-all cursor-pointer">
@@ -1337,7 +1321,6 @@ function RecruiterOverview({ recruiter }: { recruiter: Recruiter }) {
         <div className="mt-5 space-y-0.5">
           <InfoItem label="Email">{recruiter.email}</InfoItem>
           <InfoItem label="Phone">{recruiter.phone}</InfoItem>
-          <InfoItem label="Location">{recruiter.location}</InfoItem>
           <InfoItem label="Joined">{new Date(recruiter.joinedAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}</InfoItem>
           <InfoItem label="Last Active">{recruiter.lastActive}</InfoItem>
           <InfoItem label="Client Companies">

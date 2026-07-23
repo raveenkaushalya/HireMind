@@ -44,7 +44,8 @@ export default function JobsPage() {
             department: 'General',
             companyDescription: j.descriptionAboutTheCompany || '',
             skillMatch: [],
-            category: j.category || 'Engineering' // Mocking category for now since backend doesn't have it
+            category: j.category || 'Engineering', // Mocking category for now since backend doesn't have it
+            minQualification: j.minQualification || 'Any'
           }));
           setJobsData(parsedJobs);
         }
@@ -57,10 +58,28 @@ export default function JobsPage() {
   const filteredJobs = jobsData.filter(job => {
     const matchCategory = activeCategory === 'All' || job.category === activeCategory;
     const matchType = activeType === 'All' || job.type === activeType;
-    const matchSearch = !searchQuery.trim() ||
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+    let matchSearch = true;
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase().trim();
+      const removeWords = ["i am looking for a", "looking for", "i want", "job", "a", "an", "the"];
+      let coreQuery = q;
+      removeWords.forEach(w => {
+        coreQuery = coreQuery.replace(new RegExp(`\\b${w}\\b`, 'gi'), '');
+      });
+      coreQuery = coreQuery.trim();
+      if (!coreQuery) coreQuery = q;
+
+      const searchTerms = coreQuery.split(' ').filter(t => t.length > 0);
+
+      const searchTarget = `
+        ${job.title} 
+        ${job.company} 
+        ${job.tags.join(' ')} 
+        ${job.category}
+      `.toLowerCase();
+
+      matchSearch = searchTerms.some(term => searchTarget.includes(term));
+    }
     return matchCategory && matchType && matchSearch;
   });
 

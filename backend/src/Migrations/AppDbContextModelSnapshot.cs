@@ -43,6 +43,9 @@ namespace RecruitmentPlatform.API.Migrations
                         .HasColumnType("int")
                         .HasColumnName("jobID");
 
+                    b.Property<string>("RecruiterNotes")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
@@ -355,14 +358,17 @@ namespace RecruitmentPlatform.API.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description_about_the_role");
 
+                    b.Property<bool>("IsUrgent")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("location");
 
                     b.Property<string>("MinQualification")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("MinQualification");
 
                     b.Property<DateTime?>("PostedDate")
                         .HasColumnType("datetime2")
@@ -620,7 +626,7 @@ namespace RecruitmentPlatform.API.Migrations
 
             modelBuilder.Entity("RecruitmentPlatform.API.Models.HiringManager", b =>
                 {
-                    b.HasOne("RecruitmentPlatform.API.Models.Company", null)
+                    b.HasOne("RecruitmentPlatform.API.Models.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -629,6 +635,8 @@ namespace RecruitmentPlatform.API.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Company");
                 });
 
             modelBuilder.Entity("RecruitmentPlatform.API.Models.JobPosting", b =>

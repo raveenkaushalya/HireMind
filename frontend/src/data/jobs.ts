@@ -20,7 +20,7 @@ export interface Job {
   companyDescription: string;
   skillMatch: { skill: string; match: number }[];
   category: string;
-  minQualification?: string;
+  minQualification: string;
 }
 
 export const jobs: Job[] = [];

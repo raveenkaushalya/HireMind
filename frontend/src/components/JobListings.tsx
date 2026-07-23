@@ -4,15 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import {
   MapPin, Clock, ArrowRight, Sparkles,
   Laptop, Wrench, Stethoscope, GraduationCap,
-  Landmark, TrendingUp, Palette, ShoppingBag, Factory,
-  Briefcase, Grid, LucideIcon
+  Landmark, Users, Palette, ShoppingBag, Factory,
+  Utensils, Grid, LucideIcon
 } from 'lucide-react';
 import { type Job } from '../data/jobs';
 import JobDetail from './JobDetail';
 
 export const categoriesList = [
   {
-    name: 'IT / Technology',
+    name: 'IT & Technology',
     icon: Laptop,
     badgeBg: 'bg-cyan-500/10 border-cyan-500/20',
     iconColor: 'text-cyan-500',
@@ -26,7 +26,7 @@ export const categoriesList = [
     activeRing: 'ring-blue-500 border-blue-500 bg-blue-500/15'
   },
   {
-    name: 'Healthcare',
+    name: 'Healthcare & Pharma',
     icon: Stethoscope,
     badgeBg: 'bg-emerald-500/10 border-emerald-500/20',
     iconColor: 'text-emerald-500',
@@ -40,43 +40,43 @@ export const categoriesList = [
     activeRing: 'ring-purple-500 border-purple-500 bg-purple-500/15'
   },
   {
-    name: 'Finance',
+    name: 'Banking & Finance',
     icon: Landmark,
     badgeBg: 'bg-amber-500/10 border-amber-500/20',
     iconColor: 'text-amber-500',
     activeRing: 'ring-amber-500 border-amber-500 bg-amber-500/15'
   },
   {
-    name: 'Marketing & Sales',
-    icon: TrendingUp,
+    name: 'Human Resources',
+    icon: Users, // Updated to Users icon for HR & People operations
     badgeBg: 'bg-rose-500/10 border-rose-500/20',
     iconColor: 'text-rose-500',
     activeRing: 'ring-rose-500 border-rose-500 bg-rose-500/15'
   },
   {
-    name: 'Media & Design',
+    name: 'Design & Marketing',
     icon: Palette,
     badgeBg: 'bg-pink-500/10 border-pink-500/20',
     iconColor: 'text-pink-500',
     activeRing: 'ring-pink-500 border-pink-500 bg-pink-500/15'
   },
   {
-    name: 'E-commerce',
+    name: 'Logistics & Supply Chain',
     icon: ShoppingBag,
     badgeBg: 'bg-orange-500/10 border-orange-500/20',
     iconColor: 'text-orange-500',
     activeRing: 'ring-orange-500 border-orange-500 bg-orange-500/15'
   },
   {
-    name: 'Manufacturing',
+    name: 'Apparel & Manufacturing',
     icon: Factory,
     badgeBg: 'bg-teal-500/10 border-teal-500/20',
     iconColor: 'text-teal-500',
     activeRing: 'ring-teal-500 border-teal-500 bg-teal-500/15'
   },
   {
-    name: 'Consulting',
-    icon: Briefcase,
+    name: 'Hospitality & Tourism',
+    icon: Utensils, // Updated to Utensils icon for Hotels, Resorts & Food Services
     badgeBg: 'bg-indigo-500/10 border-indigo-500/20',
     iconColor: 'text-indigo-500',
     activeRing: 'ring-indigo-500 border-indigo-500 bg-indigo-500/15'
@@ -94,40 +94,45 @@ export const categoriesList = [
 const normalizeCategory = (category?: string): string => {
   if (!category) return 'other';
   const cat = category.toLowerCase().trim();
-  if (cat.includes('media') || cat.includes('design')) return 'media & design';
-  if (cat.includes('it') || cat.includes('technology') || cat.includes('tech')) return 'it / technology';
-  if (cat.includes('marketing') || cat.includes('sales')) return 'marketing & sales';
-  if (cat.includes('e-commerce') || cat.includes('ecommerce')) return 'e-commerce';
+  if (cat.includes('human') || cat.includes('hr')) return 'human resources';
+  if (cat.includes('hospitality') || cat.includes('tourism') || cat.includes('hotel')) return 'hospitality & tourism';
+  if (cat.includes('media') || cat.includes('design')) return 'design & marketing';
+  if (cat.includes('it') || cat.includes('technology') || cat.includes('tech')) return 'it & technology';
+  if (cat.includes('marketing') || cat.includes('sales')) return 'design & marketing';
+  if (cat.includes('e-commerce') || cat.includes('ecommerce') || cat.includes('logistics')) return 'logistics & supply chain';
+  if (cat.includes('apparel') || cat.includes('manufacturing')) return 'apparel & manufacturing';
+  if (cat.includes('finance') || cat.includes('banking')) return 'banking & finance';
+  if (cat.includes('healthcare') || cat.includes('pharma')) return 'healthcare & pharma';
   return cat;
 };
 
 // Map normalized category names to Lucide icons
 export const categoryIconMap: Record<string, LucideIcon> = {
-  'it / technology': Laptop,
+  'it & technology': Laptop,
   'engineering': Wrench,
-  'healthcare': Stethoscope,
+  'healthcare & pharma': Stethoscope,
   'education': GraduationCap,
-  'finance': Landmark,
-  'marketing & sales': TrendingUp,
-  'media & design': Palette,
-  'e-commerce': ShoppingBag,
-  'manufacturing': Factory,
-  'consulting': Briefcase,
+  'banking & finance': Landmark,
+  'human resources': Users,
+  'design & marketing': Palette,
+  'logistics & supply chain': ShoppingBag,
+  'apparel & manufacturing': Factory,
+  'hospitality & tourism': Utensils,
   'other': Grid,
 };
 
 // Distinct vibrant background colors for floating category badge
 export const cardBadgeStyles: Record<string, { bg: string; text: string }> = {
-  'it / technology': { bg: 'bg-cyan-500', text: 'text-white' },
+  'it & technology': { bg: 'bg-cyan-500', text: 'text-white' },
   'engineering': { bg: 'bg-blue-500', text: 'text-white' },
-  'healthcare': { bg: 'bg-emerald-500', text: 'text-white' },
+  'healthcare & pharma': { bg: 'bg-emerald-500', text: 'text-white' },
   'education': { bg: 'bg-purple-500', text: 'text-white' },
-  'finance': { bg: 'bg-amber-500', text: 'text-white' },
-  'marketing & sales': { bg: 'bg-rose-500', text: 'text-white' },
-  'media & design': { bg: 'bg-pink-500', text: 'text-white' },
-  'e-commerce': { bg: 'bg-orange-500', text: 'text-white' },
-  'manufacturing': { bg: 'bg-teal-500', text: 'text-white' },
-  'consulting': { bg: 'bg-indigo-500', text: 'text-white' },
+  'banking & finance': { bg: 'bg-amber-500', text: 'text-white' },
+  'human resources': { bg: 'bg-rose-500', text: 'text-white' },
+  'design & marketing': { bg: 'bg-pink-500', text: 'text-white' },
+  'logistics & supply chain': { bg: 'bg-orange-500', text: 'text-white' },
+  'apparel & manufacturing': { bg: 'bg-teal-500', text: 'text-white' },
+  'hospitality & tourism': { bg: 'bg-indigo-500', text: 'text-white' },
   'other': { bg: 'bg-slate-600', text: 'text-white' },
 };
 
@@ -158,13 +163,19 @@ export function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
       </div>
 
       <div>
-        {/* Job Title */}
-        <h3
-          className={`font-display font-bold text-lg leading-tight mb-2.5 transition-colors ${isDark ? 'text-white group-hover:text-primary-400' : 'text-slate-900 group-hover:text-primary-600'
-            }`}
-        >
-          {job.title}
-        </h3>
+        <div className="flex justify-between items-start mb-2.5">
+          {/* Job Title */}
+          <h3
+            className={`font-display font-bold text-lg leading-tight transition-colors ${isDark ? 'text-white group-hover:text-primary-400' : 'text-slate-900 group-hover:text-primary-600'}`}
+          >
+            {job.title}
+          </h3>
+          {(job as any).urgent && (
+            <span className="shrink-0 flex items-center gap-1 pl-1.5 pr-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-600 dark:text-red-300 ring-1 ring-inset ring-red-500/25 ml-2">
+            ⚡Urgent
+            </span>
+          )}
+        </div>
 
         {/* Company & Meta Details */}
         <div className="space-y-1.5 mb-4">
@@ -184,13 +195,6 @@ export function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
       <div>
         {/* Subtle Horizontal Divider Line inside card */}
         <div className={`w-full h-px mb-4 ${isDark ? 'bg-surface-800' : 'bg-slate-100'}`} />
-
-        {/* Subheader Title */}
-        <div className="flex items-center justify-between mb-2">
-          <span className={`text-xs font-bold tracking-tight ${isDark ? 'text-surface-300' : 'text-slate-800'}`}>
-            AI Match & Fit Score
-          </span>
-        </div>
 
         {/* Bottom Row: Tags/Applicants & Percentage Score */}
         <div className="flex items-center justify-between gap-2">
@@ -212,9 +216,6 @@ export function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
           {/* Right: Bold Match Percentage */}
           <div className="flex items-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span className={`font-extrabold text-sm ${isDark ? 'text-white' : 'text-slate-800'}`}>
-              {job.aiScore}%
-            </span>
           </div>
         </div>
       </div>
@@ -222,7 +223,7 @@ export function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
   );
 }
 
-export default function JobListings() {
+export default function JobListings({ searchQuery = '', searchLocation = '' }: { searchQuery?: string, searchLocation?: string }) {
   const { theme } = useTheme();
   const { openJobs } = useAuth();
   const isDark = theme === 'dark';
@@ -259,7 +260,9 @@ export default function JobListings() {
             department: 'General',
             companyDescription: j.descriptionAboutTheCompany || '',
             skillMatch: [],
-            category: j.category || 'IT / Technology'
+            category: j.category || 'IT & Technology',
+            minQualification: j.minQualification || 'Any',
+            urgent: j.isUrgent || false,
           }));
           setJobsData(parsedJobs);
         }
@@ -268,12 +271,46 @@ export default function JobListings() {
   }, []);
 
   const filteredJobs = jobsData.filter((j) => {
-    const matchesType = activeFilter === 'All' || j.type === activeFilter;
+    const matchesFilterType = activeFilter === 'All' || j.type === activeFilter;
     const matchesCategory =
       !selectedCategory ||
       normalizeCategory(j.category) === normalizeCategory(selectedCategory);
-    return matchesType && matchesCategory;
+
+    // Advanced Search Filter
+    let matchesSearch = true;
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase().trim();
+      // NLP-ish heuristic: remove fluff words
+      const removeWords = ["i am looking for a", "looking for", "i want", "job", "a", "an", "the"];
+      let coreQuery = q;
+      removeWords.forEach(w => {
+        coreQuery = coreQuery.replace(new RegExp(`\\b${w}\\b`, 'gi'), '');
+      });
+      coreQuery = coreQuery.trim();
+      if (!coreQuery) coreQuery = q; // fallback if stripped entirely
+
+      const searchTerms = coreQuery.split(' ').filter(t => t.length > 0);
+
+      const searchTarget = `
+        ${j.title} 
+        ${j.company} 
+        ${j.tags.join(' ')} 
+        ${j.category}
+      `.toLowerCase();
+
+      matchesSearch = searchTerms.some(term => searchTarget.includes(term));
+    }
+
+    let matchesLoc = true;
+    if (searchLocation.trim() !== '') {
+      matchesLoc = j.location.toLowerCase().includes(searchLocation.toLowerCase().trim());
+    }
+
+    return matchesFilterType && matchesCategory && matchesSearch && matchesLoc;
   });
+
+  // Limit job cards to 24 (6 rows x 4 columns on desktop)
+  const displayedJobs = filteredJobs.slice(0, 24);
 
   return (
     <>
@@ -396,7 +433,7 @@ export default function JobListings() {
 
           {/* Job Cards Grid */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
-            {filteredJobs.map((job) => (
+            {displayedJobs.map((job) => (
               <JobCard key={job.id} job={job} onClick={() => setSelectedJob(job)} />
             ))}
           </div>
@@ -423,7 +460,7 @@ export default function JobListings() {
           )}
 
           {/* Load More Button */}
-          {filteredJobs.length > 0 && (
+          {filteredJobs.length > 24 && (
             <div className="text-center mt-12">
               <button
                 onClick={openJobs}
@@ -432,7 +469,7 @@ export default function JobListings() {
                   : 'bg-white text-surface-600 hover:bg-surface-100 border border-surface-200 shadow-sm'
                   }`}
               >
-                Load More Jobs
+                Load More Jobs ({filteredJobs.length - 24} remaining)
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

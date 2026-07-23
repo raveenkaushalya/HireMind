@@ -56,7 +56,7 @@ namespace RecruitmentPlatform.API.Controllers
         public async Task<IActionResult> UpdateStage(int id, [FromBody] UpdateStageDto dto)
         {
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var result = await _service.UpdateStageAsync(id, dto.NewStage, userId);
+            var result = await _service.UpdateStageAsync(id, dto, userId);
             return result == null ? NotFound() : Ok(result);
         }
     }

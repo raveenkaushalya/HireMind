@@ -11,22 +11,9 @@ namespace RecruitmentPlatform.API.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Job_application_Candidate_CandidateId1",
-                table: "Job_application");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Job_application_CandidateId1",
-                table: "Job_application");
 
-            migrationBuilder.DropColumn(
-                name: "CandidateId1",
-                table: "Job_application");
 
-            migrationBuilder.RenameColumn(
-                name: "CV_metadata_link",
-                table: "Candidate",
-                newName: "ResumeUrl");
 
             migrationBuilder.AddColumn<string>(
                 name: "RegistrationToken",

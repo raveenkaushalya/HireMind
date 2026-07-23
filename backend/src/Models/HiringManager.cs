@@ -13,5 +13,6 @@ namespace RecruitmentPlatform.API.Models
         public string? RegistrationToken { get; set; }
         public DateTime? TokenExpiry { get; set; }
         public string Status { get; set; } = "Pending";
+        public Company? Company { get; set; }
     }
 }

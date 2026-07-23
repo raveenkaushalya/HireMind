@@ -47,6 +47,7 @@ namespace RecruitmentPlatform.API.Services
                 Requirements = dto.Requirements ?? string.Empty,
                 MinQualification = dto.MinQualification ?? string.Empty,
                 Status = dto.Status ?? "Open",
+                IsUrgent = dto.IsUrgent,
                 PostedDate = DateTime.UtcNow
             };
 
@@ -74,6 +75,7 @@ namespace RecruitmentPlatform.API.Services
             job.Requirements = dto.Requirements ?? job.Requirements;
             job.MinQualification = dto.MinQualification ?? job.MinQualification;
             job.Status = dto.Status ?? job.Status;
+            job.IsUrgent = dto.IsUrgent;
 
             await _repo.UpdateAsync(job);
             return MapToDto(job);
@@ -84,8 +86,7 @@ namespace RecruitmentPlatform.API.Services
             var job = await _repo.GetByIdAsync(id);
             if (job == null) return false;
 
-            job.Status = "Closed";
-            await _repo.UpdateAsync(job);
+            await _repo.DeleteAsync(job);
             return true;
         }
 
@@ -119,6 +120,7 @@ namespace RecruitmentPlatform.API.Services
             MinQualification = j.MinQualification,
             DescriptionAboutTheCompany = j.DescriptionAboutTheCompany,
             Status = j.Status,
+            IsUrgent = j.IsUrgent,
             CompanyName = j.Company?.Name
         };
     }

@@ -10,19 +10,19 @@ namespace RecruitmentPlatform.API.Repositories
 
         public override async Task<IEnumerable<HiringManager>> GetAllAsync()
         {
-            return await _dbSet.OrderByDescending(h => h.Id).ToListAsync();
+            return await _dbSet.Include(h => h.Company).OrderByDescending(h => h.Id).ToListAsync();
         }
 
         public async Task<IEnumerable<HiringManager>> GetByCompanyIdAsync(int companyId)
         {
-            return await _dbSet.Where(h => h.CompanyId == companyId)
+            return await _dbSet.Include(h => h.Company).Where(h => h.CompanyId == companyId)
                                .OrderByDescending(h => h.Id)
                                .ToListAsync();
         }
 
         public async Task<HiringManager?> GetByUserIdAsync(int userId)
         {
-            return await _dbSet.FirstOrDefaultAsync(h => h.UserId == userId);
+            return await _dbSet.Include(h => h.Company).FirstOrDefaultAsync(h => h.UserId == userId);
         }
     }
 }

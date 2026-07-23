@@ -115,7 +115,8 @@ namespace RecruitmentPlatform.API.Services
             CompanyId = h.CompanyId,
             UserId = h.UserId,
             JoinedDate = h.JoinedDate,
-            Status = h.Status
+            Status = h.Status,
+            CompanyName = h.Company?.Name
         };
     }
 }

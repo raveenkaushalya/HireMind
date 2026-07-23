@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { type Candidate, type Stage } from "../../../data";
+import CandidateProfileModal from "../../../components/dashboard/recruitment/CandidateProfileModal";
 
 // ──────────── Types ────────────
 type PipelineColumn = "Applied" | "Screening" | "Interview" | "Offer" | "Hired";
 type SubSection = "kanban" | "database" | "detail";
-type InterviewSubSection = "scheduling" | "scorecards" | "assessments";
 type SettingsSubSection = "profile" | "notifications" | "preferences";
 
 interface TaskItem {
@@ -27,29 +27,6 @@ interface ActivityFeed {
   icon: string;
 }
 
-interface InterviewEvent {
-  id: string;
-  candidate: string;
-  candidateId: string;
-  date: string;
-  time: string;
-  type: string;
-  interviewer: string;
-  status: "Scheduled" | "Completed" | "Cancelled";
-  scorecard?: { categories: { name: string; score: number; max: number }[]; notes: string; recommendation: string; submitted: boolean };
-}
-
-interface Assessment {
-  id: string;
-  candidate: string;
-  candidateId: string;
-  type: string;
-  sent: string;
-  due: string;
-  status: "Pending" | "Submitted" | "Overdue";
-  score?: number;
-}
-
 interface RecruiterProfile {
   name: string;
   email: string;
@@ -63,14 +40,12 @@ interface RecruiterProfile {
 // ──────────── Static Data ────────────
 const COLORS = ["#eab308", "#ca8a04", "#d97706", "#f59e0b", "#10b981", "#14b8a6", "#0ea5e9"];
 const PROFILE: RecruiterProfile = {
-  name: "Ava Johnson", email: "ava.j@hireminds.co", phone: "+1 (415) 555-0281",
+  name: "Kamal Fernando", email: "kamal.c@hireminds.co", phone: "+94 71 234 5678",
   role: "Senior Recruiter", avatar: COLORS[0], joinedAt: "2025-06-15",
   bio: "Experienced tech recruiter specializing in engineering and data roles across Fortune 500 companies.",
 };
 
 const ACTIVITIES: ActivityFeed[] = [];
-const INTERVIEWS: InterviewEvent[] = [];
-const ASSESSMENTS: Assessment[] = [];
 
 // ──────────── Main Component ────────────
 import { useAuth } from "../../../context/AuthContext";
@@ -84,7 +59,6 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileCandidate, setProfileCandidate] = useState<Candidate | null>(null);
   const [pipelineSub, setPipelineSub] = useState<SubSection>("kanban");
-  const [interviewsSub, setInterviewsSub] = useState<InterviewSubSection>("scheduling");
   const [settingsSub, setSettingsSub] = useState<SettingsSubSection>("profile");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -96,25 +70,123 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
 
   const [candidatesData, setCandidatesData] = useState<Candidate[]>([]);
 
+  const handleRejectCandidate = async (appId: string) => {
+    try {
+      const res = await fetch(`/api/applications/${appId}/stage`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newStage: "Rejected" }),
+      });
+      if (res.ok) {
+        setCandidatesData(prev => prev.map(c => c.id === appId ? { ...c, stage: "Rejected" } : c));
+        setProfileCandidate(null);
+        setSelectedCandidate(null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleScheduleInterview = async (appId: string, details: { date: Date, time: string, feedback: string }) => {
+    try {
+      const res = await fetch(`/api/applications/${appId}/stage`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          newStage: "Interview",
+          date: `${details.date.getFullYear()}-${String(details.date.getMonth() + 1).padStart(2, '0')}-${String(details.date.getDate()).padStart(2, '0')}`,
+          time: details.time,
+          notes: details.feedback
+        }), // "Interview" corresponds to "Screening" pipeline column
+      });
+      if (res.ok) {
+        setCandidatesData(prev => prev.map(c => c.id === appId ? { ...c, stage: "Phone Screen" } : c)); // Phone Screen will go into Screening
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSubmitToHM = async (appId: string, details: { feedback: string; score: number }) => {
+    try {
+      const res = await fetch(`/api/applications/${appId}/stage`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          newStage: "Technical",
+          notes: `Score: ${details.score}/100. Feedback: ${details.feedback}`
+        }), // "Technical" maps to the Interview column on HM / Recruiter board
+      });
+      if (res.ok) {
+        setCandidatesData(prev => prev.map(c => c.id === appId ? { ...c, stage: "Technical" } : c));
+        setTimeout(() => {
+          setProfileCandidate(null);
+          setSelectedCandidate(null);
+        }, 1200);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleHiredCandidate = async (appId: string) => {
+    try {
+      const res = await fetch(`/api/applications/${appId}/stage`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newStage: "Hired" }),
+      });
+      if (res.ok) {
+        setCandidatesData(prev => prev.map(c => c.id === appId ? { ...c, stage: "Hired" } : c));
+        setTimeout(() => {
+          setProfileCandidate(null);
+          setSelectedCandidate(null);
+        }, 1200);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/candidates', { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json()),
-      fetch('/api/applications', { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json())
+      fetch('/api/applications', { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json()),
+      fetch('/api/jobs').then(res => res.json())
     ])
-      .then(([candidatesRes, applicationsRes]) => {
+      .then(([candidatesRes, applicationsRes, jobsRes]) => {
         if (!Array.isArray(candidatesRes) || !Array.isArray(applicationsRes)) return;
 
         const candsMap = new Map();
         candidatesRes.forEach((c: any) => candsMap.set(c.id, c));
 
+        const jobsMap = new Map();
+        if (Array.isArray(jobsRes)) {
+          jobsRes.forEach((j: any) => jobsMap.set(j.id, j));
+        }
+
         const mappedApplicants = applicationsRes.map((app: any, i: number) => {
           const c = candsMap.get(app.candidateId) || {};
+          const j = jobsMap.get(app.jobPostingId) || {};
 
-          let stg: Stage = "Shortlisted";
-          if (app.status === "Applied") stg = "Shortlisted";
-          else if (app.status === "Interview") stg = "Technical";
+          let stg: Stage = "Applied";
+          if (app.status === "Applied") stg = "Applied";
+          else if (app.status === "Interview") stg = "Phone Screen"; // Map to proper Stage
+          else if (app.status === "Technical") stg = "Technical";
           else if (app.status === "Offer") stg = "Offer";
           else if (app.status === "Hired") stg = "Hired";
           else if (app.status === "Rejected") stg = "Rejected";
@@ -122,33 +194,33 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
           return {
             id: app.id.toString(),
             name: app.candidateName || c.name || "Unknown Applicant",
-            role: app.jobTitle || c.currentJobTitle || "Applicant",
-            department: "Engineering",
-            seniority: c.experienceLevel || "Mid",
-            source: "Platform Application",
+            role: app.jobTitle || j.title || c.currentJobTitle || "Applicant",
+            department: j.category || c.department || "General",
+            seniority: j.yearsOfExperienceNeeded || c.experienceLevel || "Mid",
+            source: c.source || "Unknown",
             stage: stg,
             score: 85,
-            yearsExp: 3,
+            yearsExp: parseInt(j.yearsOfExperienceNeeded) || 3,
             location: c.location || "Remote",
             appliedAt: app.dateSubmitted || new Date().toISOString(),
             shortlistedAt: app.dateSubmitted || new Date().toISOString(),
             daysInPipeline: Math.max(1, Math.floor((new Date().getTime() - new Date(app.dateSubmitted || new Date()).getTime()) / (1000 * 3600 * 24))),
-            status: "Active",
+            status: (stg === "Phone Screen" ? "Under Review" : "Active") as Candidate["status"],
             avatar: COLORS[i % COLORS.length],
             email: c.email || "",
             phone: c.phoneNumber || "",
             education: c.education || "",
             previousCompany: "",
-            expectedSalary: "",
+            expectedSalary: j.salaryRange || "",
             noticePeriod: "",
             skills: c.skills ? c.skills.split(',') : [],
             summary: c.bio || "",
             resumeMatch: 95,
-            interviewHistory: []
+            resumeUrl: c.resumeUrl || undefined,
+            interviewHistory: [],
           };
         });
 
-        // Optional: Include mock candidates manually if array is empty so dashboard doesn't look totally blank initially?
         // Let's rely entirely on actual applicants as requested by the user flow!
         setCandidatesData(mappedApplicants);
       })
@@ -173,8 +245,11 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
   const pipeline = useMemo(() => {
     const cols: Record<PipelineColumn, Candidate[]> = { Applied: [], Screening: [], Interview: [], Offer: [], Hired: [] };
     candidatesData.slice(0, 30).forEach((c) => {
-      const map: Record<Stage, PipelineColumn> = { Shortlisted: "Applied", "Phone Screen": "Screening", Technical: "Interview", Onsite: "Interview", Offer: "Offer", Hired: "Hired", Rejected: "Applied" };
-      cols[map[c.stage]].push(c);
+      const map: Partial<Record<Stage, PipelineColumn>> = { Applied: "Applied", Shortlisted: "Applied", "Phone Screen": "Screening", Technical: "Interview", Onsite: "Interview", Offer: "Offer", Hired: "Hired" };
+      const targetCol = map[c.stage];
+      if (targetCol) {
+        cols[targetCol].push(c);
+      }
     });
     return cols;
   }, [candidatesData]);
@@ -182,7 +257,7 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
   const toggleTask = (id: string) => setTasks((p) => p.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
 
   const sectionTitles: Record<string, { title: string; subtitle: string }> = {
-    overview: { title: "Dashboard", subtitle: "Your recruitment command center — metrics, tasks, and activity at a glance" },
+    overview: { title: "Dashboard", subtitle: "Your recruitment command center. Metrics, tasks, and activity at a glance" },
     pipeline: { title: "Candidate Pipeline", subtitle: "Track candidates through every stage from application to hire" },
     interviews: { title: "Interviews & Evaluations", subtitle: "Schedule interviews, submit scorecards, and track assessments" },
     settings: { title: "Settings", subtitle: "Manage your profile, notifications, and system preferences" },
@@ -293,7 +368,7 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
           )}
 
           {section === "interviews" && (
-            <InterviewsSection dark={dark} sub={interviewsSub} setSub={setInterviewsSub} interviews={INTERVIEWS} assessments={ASSESSMENTS} />
+            <InterviewsSection dark={dark} candidates={candidatesData} onSelectCandidate={setSelectedCandidate} />
           )}
 
           {section === "settings" && (
@@ -303,33 +378,49 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
       </div>
 
       {profileCandidate && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setProfileCandidate(null)} />
-          <div className={`relative w-full max-w-lg rounded-2xl border shadow-2xl p-6 animate-fadeIn ${dark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold">Candidate Profile</h3>
-              <button onClick={() => setProfileCandidate(null)} className={`p-1.5 rounded-lg ${dark ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}>
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <CandidateDetail candidate={profileCandidate} dark={dark} />
-          </div>
-        </div>
+        <CandidateProfileModal
+          candidate={profileCandidate}
+          dark={dark}
+          stageColor={{
+            "Applied": "bg-blue-500/15 text-blue-600 dark:text-blue-300 ring-blue-500/30",
+            "Shortlisted": "bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/30",
+            "Phone Screen": "bg-sky-500/15 text-sky-600 dark:text-sky-300 ring-sky-500/30",
+            "Technical": "bg-violet-500/15 text-violet-600 dark:text-violet-300 ring-violet-500/30",
+            "Onsite": "bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/30",
+            "Offer": "bg-pink-500/15 text-pink-600 dark:text-pink-300 ring-pink-500/30",
+            "Hired": "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 ring-emerald-500/30",
+            "Rejected": "bg-rose-500/15 text-rose-600 dark:text-rose-300 ring-rose-500/30"
+          }}
+          userRole="recruiter"
+          onClose={() => setProfileCandidate(null)}
+          onReject={(id) => handleRejectCandidate(id)}
+          onSchedule={(id, details) => handleScheduleInterview(id, details)}
+          onHired={(id) => handleHiredCandidate(id)}
+        />
       )}
 
       {selectedCandidate && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedCandidate(null)} />
-          <div className={`relative w-full max-w-lg rounded-2xl border shadow-2xl p-6 animate-fadeIn ${dark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold">Candidate Details</h3>
-              <button onClick={() => setSelectedCandidate(null)} className={`p-1.5 rounded-lg ${dark ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}>
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <CandidateDetail candidate={selectedCandidate} dark={dark} />
-          </div>
-        </div>
+        <CandidateProfileModal
+          candidate={selectedCandidate}
+          dark={dark}
+          stageColor={{
+            "Applied": "bg-blue-500/15 text-blue-600 dark:text-blue-300 ring-blue-500/30",
+            "Shortlisted": "bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/30",
+            "Phone Screen": "bg-sky-500/15 text-sky-600 dark:text-sky-300 ring-sky-500/30",
+            "Technical": "bg-violet-500/15 text-violet-600 dark:text-violet-300 ring-violet-500/30",
+            "Onsite": "bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/30",
+            "Offer": "bg-pink-500/15 text-pink-600 dark:text-pink-300 ring-pink-500/30",
+            "Hired": "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 ring-emerald-500/30",
+            "Rejected": "bg-rose-500/15 text-rose-600 dark:text-rose-300 ring-rose-500/30"
+          }}
+
+          userRole="recruiter"
+          onClose={() => setSelectedCandidate(null)}
+          onReject={(id) => handleRejectCandidate(id)}
+          onSchedule={(id, details) => handleScheduleInterview(id, details)}
+          onSubmitToHM={(id, details) => handleSubmitToHM(id, details)}
+          onHired={(id) => handleHiredCandidate(id)}
+        />
       )}
     </div>
   );
@@ -345,47 +436,7 @@ function OverviewSection({ dark, stats, tasks, toggleTask, activities }: { dark:
         <MetricCard dark={dark} label="Avg Time-to-Fill" value={stats.avgFill} color="#f59e0b" />
         <MetricCard dark={dark} label="Offer Acceptance" value={stats.acceptanceRate} color="#10b981" />
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className={`lg:col-span-1 rounded-2xl border p-5 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
-          <h3 className="font-bold text-sm mb-4">Pending Tasks</h3>
-          <div className="space-y-2">
-            {tasks.map((t) => (
-              <label key={t.id} className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all ${t.done ? (dark ? "bg-slate-800/30 opacity-50" : "bg-slate-50 opacity-50") : (dark ? "bg-slate-950/40 hover:bg-slate-950/60" : "bg-slate-50 hover:bg-slate-100")}`}>
-                <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} className="mt-0.5 accent-amber-500" />
-                <div className="min-w-0 flex-1">
-                  <p className={`text-xs font-bold ${t.done ? "line-through" : ""}`}>{t.title}</p>
-                  <p className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>{t.candidate} · {t.due}</p>
-                </div>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${t.priority === "high" ? "bg-rose-500/15 text-rose-400" : t.priority === "medium" ? "bg-amber-500/15 text-amber-400" : "bg-slate-500/15 text-slate-400"}`}>{t.priority}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className={`lg:col-span-2 rounded-2xl border p-5 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
-          <h3 className="font-bold text-sm mb-4">Recent Activity</h3>
-          <div className="space-y-3 max-h-[320px] overflow-y-auto pr-2">
-            {activities.map((a) => (
-              <div key={a.id} className={`flex items-start gap-3 p-3 rounded-xl ${dark ? "bg-slate-950/40" : "bg-slate-50"}`}>
-                <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${dark ? "bg-slate-800 text-slate-300" : "bg-white text-slate-500 border border-slate-200"}`}>
-                  {a.icon === "mail" && <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
-                  {a.icon === "arrow" && <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>}
-                  {a.icon === "check" && <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                  {a.icon === "code" && <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>}
-                  {a.icon === "phone" && <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold">{a.action}</p>
-                  <p className={`text-[11px] ${dark ? "text-slate-400" : "text-slate-500"}`}>{a.candidate}</p>
-                </div>
-                <span className={`text-[10px] whitespace-nowrap ${dark ? "text-slate-500" : "text-slate-400"}`}>{a.time}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
+      
       <div className={`rounded-2xl border p-5 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
         <h3 className="font-bold text-sm mb-4">Application Trends</h3>
         <div className={`rounded-xl border p-4 ${dark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50 border-slate-100"}`}>
@@ -478,134 +529,68 @@ function PipelineSection({ dark, pipelineSub, setPipelineSub, pipeline, setSelec
   );
 }
 
-// ──────────── Candidate Detail Modal ────────────
-function CandidateDetail({ candidate, dark }: { candidate: Candidate; dark: boolean }) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-4">
-        <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold text-slate-950 shadow-lg flex-shrink-0" style={{ background: candidate.avatar }}>{candidate.name.split(" ").map((n) => n[0]).join("")}</div>
-        <div className="min-w-0 flex-1">
-          <h4 className="text-base font-bold">{candidate.name}</h4>
-          <p className={`text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>{candidate.role} · {candidate.department}</p>
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${dark ? "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30" : "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200"}`}>{candidate.stage}</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${dark ? "bg-slate-700 text-slate-300" : "bg-slate-100 text-slate-600"}`}>{candidate.seniority}</span>
-          </div>
-        </div>
-        <div className="text-right"><p className={`text-2xl font-extrabold ${candidate.score >= 85 ? "text-emerald-400" : candidate.score >= 70 ? "text-amber-400" : "text-rose-400"}`}>{candidate.score}</p><p className={`text-[9px] uppercase tracking-wider font-bold ${dark ? "text-slate-500" : "text-slate-400"}`}>Score</p></div>
-      </div>
 
-      <div className={`rounded-xl border p-4 space-y-0.5 ${dark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-100"}`}>
-        <InfoRow dark={dark} label="Email">{candidate.email}</InfoRow>
-        <InfoRow dark={dark} label="Location">{candidate.location}</InfoRow>
-        <InfoRow dark={dark} label="Experience">{candidate.yearsExp} years</InfoRow>
-        <InfoRow dark={dark} label="Source">{candidate.source}</InfoRow>
-        <InfoRow dark={dark} label="Applied">{new Date(candidate.appliedAt).toLocaleDateString()}</InfoRow>
-      </div>
-
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Skills</p>
-        <div className="flex flex-wrap gap-1.5">
-          {candidate.skills?.slice(0, 8).map((s) => <span key={s} className={`px-2 py-1 rounded-lg text-[11px] font-semibold ${dark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>{s}</span>)}
-        </div>
-      </div>
-
-      {candidate.summary && (
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Notes</p>
-          <p className={`text-xs leading-relaxed ${dark ? "text-slate-400" : "text-slate-500"}`}>{candidate.summary}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function InfoRow({ dark, label, children }: { dark: boolean; label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-3 py-1.5">
-      <span className={`text-[11px] font-semibold min-w-[80px] ${dark ? "text-slate-400" : "text-slate-500"}`}>{label}</span>
-      <span className="text-xs font-semibold text-right">{children}</span>
-    </div>
-  );
-}
 
 // ──────────── Interviews & Evaluations ────────────
-function InterviewsSection({ dark, sub, setSub, interviews, assessments }: { dark: boolean; sub: InterviewSubSection; setSub: (v: InterviewSubSection) => void; interviews: InterviewEvent[]; assessments: Assessment[] }) {
+function InterviewsSection({ dark, candidates, onSelectCandidate }: { dark: boolean; candidates: Candidate[]; onSelectCandidate: (c: Candidate) => void }) {
+  const activeInterviews = candidates.filter(c => c.stage === "Phone Screen" || c.stage === "Technical" || c.stage === "Onsite");
+
   return (
-    <div className="space-y-4 animate-fadeIn">
-      <div className="flex gap-1 flex-wrap">
-        {(["scheduling", "scorecards", "assessments"] as const).map((s) => (
-          <button key={s} onClick={() => setSub(s)}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${sub === s ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 shadow-lg shadow-amber-500/20" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
-          >{s === "scheduling" ? " Scheduling" : s === "scorecards" ? "📝 Scorecards" : "💻 Assessments"}</button>
-        ))}
-      </div>
-
-      {sub === "scheduling" && (
-        <div className={`rounded-2xl border overflow-hidden ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
-          <table className="w-full text-xs">
-            <thead className={dark ? "text-slate-500 bg-slate-950/40" : "text-slate-400 bg-slate-50"}>
-              <tr><th className="py-3 px-4 text-left">Candidate</th><th className="py-3 px-4 text-left">Date & Time</th><th className="py-3 px-4 text-left">Type</th><th className="py-3 px-4 text-left">Interviewer</th><th className="py-3 px-4 text-center">Status</th></tr>
-            </thead>
-            <tbody>
-              {interviews.map((i) => (
-                <tr key={i.id} className={`border-t ${dark ? "border-slate-800/50 hover:bg-slate-900/40" : "border-slate-100 hover:bg-slate-50"}`}>
-                  <td className="py-3 px-4 font-semibold">{i.candidate}</td>
-                  <td className="py-3 px-4">{new Date(i.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {i.time}</td>
-                  <td className="py-3 px-4">{i.type}</td>
-                  <td className="py-3 px-4 text-slate-400">{i.interviewer}</td>
-                  <td className="py-3 px-4 text-center"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${i.status === "Scheduled" ? "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30" : i.status === "Completed" ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30" : "bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-500/30"}`}>{i.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="space-y-6 animate-fadeIn">
+      {activeInterviews.length === 0 ? (
+        <div className={`p-10 rounded-2xl border text-center ${dark ? "bg-slate-900/40 border-slate-800" : "bg-slate-50 border-slate-200/70"}`}>
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${dark ? "bg-slate-800" : "bg-white border"}`}>
+            <svg viewBox="0 0 24 24" className={`h-8 w-8 ${dark ? "text-slate-600" : "text-slate-400"}`} fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-sm font-bold mb-1">No Active Interviews</h3>
+          <p className={`text-xs ${dark ? "text-slate-500" : "text-slate-400"}`}>There are no candidates currently undergoing recruiter screening or interviews.</p>
         </div>
-      )}
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {activeInterviews.map((c) => (
+            <div key={c.id} className={`flex flex-col relative rounded-2xl border overflow-hidden transition-all hover:shadow-lg ${dark ? "bg-slate-900/70 border-slate-800 hover:border-amber-500/30" : "bg-white border-slate-200 shadow-sm hover:border-amber-400"}`}>
+              {/* Card Header Background */}
+              <div className={`h-16 w-full absolute top-0 left-0 ${dark ? "bg-gradient-to-b from-slate-800/80 to-transparent" : "bg-gradient-to-b from-slate-100 to-transparent"}`} />
 
-      {sub === "scorecards" && (
-        <div className="space-y-4">
-          {interviews.filter((i) => i.scorecard).map((i) => (
-            <div key={i.id} className={`rounded-2xl border p-5 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
-              <div className="flex items-start justify-between mb-4">
-                <div><h4 className="text-sm font-bold">{i.candidate}</h4><p className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>{i.type} · {new Date(i.date).toLocaleDateString()}</p></div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30">Submitted</span>
-              </div>
-              <div className="space-y-2">
-                {i.scorecard!.categories.map((cat) => (
-                  <div key={cat.name} className="flex items-center gap-3">
-                    <span className={`text-xs font-semibold w-28 ${dark ? "text-slate-400" : "text-slate-500"}`}>{cat.name}</span>
-                    <div className={`flex-1 h-2 rounded-full overflow-hidden ${dark ? "bg-slate-800" : "bg-slate-100"}`}>
-                      <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-500" style={{ width: `${(cat.score / cat.max) * 100}%` }} />
-                    </div>
-                    <span className="text-xs font-bold w-10 text-right">{cat.score}/{cat.max}</span>
+              <div className="relative p-5">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="h-12 w-12 rounded-2xl flex items-center justify-center text-lg font-bold text-slate-950 shadow-md flex-shrink-0" style={{ background: c.avatar }}>
+                    {c.name.split(" ").map((n) => n[0]).join("")}
                   </div>
-                ))}
+                  <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wide uppercase ${c.stage === "Phone Screen" ? "bg-sky-500/15 text-sky-500 ring-1 ring-inset ring-sky-500/30" :
+                    c.stage === "Technical" ? "bg-violet-500/15 text-violet-400 ring-1 ring-inset ring-violet-500/30" :
+                      "bg-amber-500/15 text-amber-500 ring-1 ring-inset ring-amber-500/30"
+                    }`}>
+                    {c.stage}
+                  </span>
+                </div>
+
+                <h3 className="text-base font-bold truncate mb-1">{c.name}</h3>
+                <p className={`text-xs truncate ${dark ? "text-slate-400" : "text-slate-500"}`}>{c.role}</p>
+                <div className={`mt-4 pt-4 border-t grid grid-cols-2 gap-3 ${dark ? "border-slate-800" : "border-slate-100"}`}>
+                  <div>
+                    <p className={`text-[10px] uppercase font-bold tracking-wider mb-1 ${dark ? "text-slate-500" : "text-slate-400"}`}>Candidate Score</p>
+                    <p className="text-sm font-extrabold">{c.score}/100</p>
+                  </div>
+                  <div>
+                    <p className={`text-[10px] uppercase font-bold tracking-wider mb-1 ${dark ? "text-slate-500" : "text-slate-400"}`}>Days in Pipeline</p>
+                    <p className="text-sm font-medium">{c.daysInPipeline} Days</p>
+                  </div>
+                </div>
               </div>
-              <p className={`text-xs mt-4 leading-relaxed ${dark ? "text-slate-400" : "text-slate-500"}`}>{i.scorecard!.notes}</p>
-              <p className={`text-xs font-bold mt-2 ${dark ? "text-emerald-300" : "text-emerald-700"}`}>Recommendation: {i.scorecard!.recommendation}</p>
+
+              <div className={`mt-auto p-3 border-t bg-black/5 ${dark ? "border-slate-800" : "border-slate-100"}`}>
+                <button
+                  onClick={() => onSelectCandidate(c)}
+                  className={`w-full py-2 rounded-xl text-xs font-bold transition-colors ${dark ? "bg-slate-800 hover:bg-amber-500/20 hover:text-amber-300 text-slate-300" : "bg-slate-100 hover:bg-amber-100 hover:text-amber-700 text-slate-700"}`}
+                >
+                  Review Details &amp; Evaluate
+                </button>
+              </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {sub === "assessments" && (
-        <div className={`rounded-2xl border overflow-hidden ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
-          <table className="w-full text-xs">
-            <thead className={dark ? "text-slate-500 bg-slate-950/40" : "text-slate-400 bg-slate-50"}>
-              <tr><th className="py-3 px-4 text-left">Candidate</th><th className="py-3 px-4 text-left">Assessment</th><th className="py-3 px-4 text-left">Due</th><th className="py-3 px-4 text-center">Status</th><th className="py-3 px-4 text-right">Score</th></tr>
-            </thead>
-            <tbody>
-              {assessments.map((a) => (
-                <tr key={a.id} className={`border-t ${dark ? "border-slate-800/50 hover:bg-slate-900/40" : "border-slate-100 hover:bg-slate-50"}`}>
-                  <td className="py-3 px-4 font-semibold">{a.candidate}</td>
-                  <td className="py-3 px-4">{a.type}</td>
-                  <td className="py-3 px-4 text-slate-400">{new Date(a.due).toLocaleDateString()}</td>
-                  <td className="py-3 px-4 text-center"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${a.status === "Pending" ? "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30" : a.status === "Submitted" ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30" : "bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-500/30"}`}>{a.status}</span></td>
-                  <td className="py-3 px-4 text-right font-bold">{a.score ? `${a.score}%` : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       )}
     </div>
@@ -613,7 +598,7 @@ function InterviewsSection({ dark, sub, setSub, interviews, assessments }: { dar
 }
 
 // ──────────── Settings ────────────
-function SettingsSection({ dark, sub, setSub, profile, setProfile, onLogout, onSwitch }: { dark: boolean; sub: SettingsSubSection; setSub: (v: SettingsSubSection) => void; profile: RecruiterProfile; setProfile: (p: RecruiterProfile) => void; onLogout: () => void; onSwitch: () => void }) {
+function SettingsSection({ dark, sub, setSub, profile, setProfile, onLogout }: { dark: boolean; sub: SettingsSubSection; setSub: (v: SettingsSubSection) => void; profile: RecruiterProfile; setProfile: (p: RecruiterProfile) => void; onLogout: () => void; onSwitch: () => void }) {
   return (
     <div className="space-y-4 animate-fadeIn">
       <div className="flex gap-1">

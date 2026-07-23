@@ -111,6 +111,7 @@ namespace RecruitmentPlatform.API.Data
             modelBuilder.Entity<JobPosting>().Property(j => j.Responsibilities).HasColumnName("responsibilities");
             modelBuilder.Entity<JobPosting>().Property(j => j.Requirements).HasColumnName("requirements");
             modelBuilder.Entity<JobPosting>().Property(j => j.DescriptionAboutTheCompany).HasColumnName("description_about_the_company");
+            modelBuilder.Entity<JobPosting>().Property(j => j.MinQualification).HasColumnName("MinQualification");
             modelBuilder.Entity<JobPosting>().Property(j => j.Status).HasColumnName("status");
 
             modelBuilder.Entity<Application>().ToTable("Job_application");
@@ -177,7 +178,7 @@ namespace RecruitmentPlatform.API.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<HiringManager>()
-                .HasOne<Company>()
+                .HasOne(h => h.Company)
                 .WithMany()
                 .HasForeignKey(h => h.CompanyId)
                 .OnDelete(DeleteBehavior.Restrict);

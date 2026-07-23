@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { type Candidate, type Department, type Source, type Stage, DEPARTMENTS, ALL_SOURCES, ALL_STAGES } from "../../../data";
+import { type Candidate, type Department, type Source, type Stage, DEPARTMENTS, ALL_SOURCES, ALL_STAGES, CANDIDATES } from "../../../data";
 import { ShortlistTrendChart, DepartmentBarChart, SourceDonutChart, StageFunnelChart } from "../../../components/dashboard/recruitment/Charts";
 import CandidateProfileModal from "../../../components/dashboard/recruitment/CandidateProfileModal";
 import HiringSettings from "../../../components/dashboard/recruitment/HiringSettings";
@@ -20,15 +20,27 @@ const SECTIONS: { id: Section; label: string; icon: React.ReactNode }[] = [
 const RANGE_OPTIONS = [{ label: "7d", days: 7 }, { label: "30d", days: 30 }, { label: "60d", days: 60 }, { label: "90d", days: 90 }];
 const NAV_GROUPS = [{ label: "Dashboard", ids: ["overview"] }, { label: "Management", ids: ["candidates", "jobs"] }, { label: "System", ids: ["settings"] }];
 function daysAgo(iso: string) { return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); }
-const stageColor: Record<Stage, string> = { Shortlisted: "bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/30", "Phone Screen": "bg-sky-500/15 text-sky-600 dark:text-sky-300 ring-sky-500/30", Technical: "bg-violet-500/15 text-violet-600 dark:text-violet-300 ring-violet-500/30", Onsite: "bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/30", Offer: "bg-pink-500/15 text-pink-600 dark:text-pink-300 ring-pink-500/30", Hired: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 ring-emerald-500/30", Rejected: "bg-rose-500/15 text-rose-600 dark:text-rose-300 ring-rose-500/30" };
-const statusColor = { Active: "bg-emerald-500", "On Hold": "bg-amber-500", Rejected: "bg-rose-500", Offer: "bg-pink-500", Hired: "bg-teal-500" };
 
-export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogout: () => void; onSwitch: () => void }) {
+// Comprehensive mapping + default fallback for stage colors
+const DEFAULT_STAGE_COLOR = "bg-slate-500/15 text-slate-600 dark:text-slate-300 ring-slate-500/30";
+const stageColor: Record<string, string> = {
+  Sourced: "bg-blue-500/15 text-blue-600 dark:text-blue-300 ring-blue-500/30",
+  Applied: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 ring-indigo-500/30",
+  Shortlisted: "bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/30",
+  "Phone Screen": "bg-sky-500/15 text-sky-600 dark:text-sky-300 ring-sky-500/30",
+  Technical: "bg-violet-500/15 text-violet-600 dark:text-violet-300 ring-violet-500/30",
+  Onsite: "bg-orange-500/15 text-orange-600 dark:text-orange-300 ring-orange-500/30",
+  Offer: "bg-pink-500/15 text-pink-600 dark:text-pink-300 ring-pink-500/30",
+  Hired: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 ring-emerald-500/30",
+  Rejected: "bg-rose-500/15 text-rose-600 dark:text-rose-300 ring-rose-500/30"
+};
+
+export default function HiringManagerDashboard({ onLogout }: { onLogout: () => void; onSwitch: () => void }) {
   const { token } = useAuth();
   const [dark, setDark] = useState(true);
   const [section, setSection] = useState<Section>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed] = useState(false);
   const [rangeDays, setRangeDays] = useState(30);
   const [dept, setDept] = useState<Department | "All">("All");
   const [source, setSource] = useState<Source | "All">("All");
@@ -38,10 +50,10 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [profileCandidate, setProfileCandidate] = useState<Candidate | null>(null);
-  
+
   // Dropdown / Profile Menu State
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [companyName, setCompanyName] = useState<string>("Acme Inc.");
+  const [companyName, setCompanyName] = useState<string>("");
   const userRole: Role = "hiring_manager";
 
   const COLORS = ["#eab308", "#ca8a04", "#d97706", "#f59e0b", "#10b981", "#14b8a6", "#0ea5e9"];
@@ -49,57 +61,91 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
 
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
 
-  // Fetch Hiring Manager Profile to retrieve assigned company name
   useEffect(() => {
     if (!token) return;
-    fetch('/api/hiring-managers/me', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(profile => {
-        if (profile?.companyName) {
-          setCompanyName(profile.companyName);
-        }
-      })
-      .catch(console.error);
-  }, [token]);
 
-  useEffect(() => {
-    fetch('/api/candidates', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setCandidatesData(data.map((c: any, i) => ({
-            id: c.id.toString(),
-            name: c.name || "Unknown Candidate",
-            role: c.currentJobTitle || "Applicant",
-            department: "Engineering",
-            seniority: c.experienceLevel || "Mid",
-            source: "Company Site",
-            stage: "Shortlisted",
+    fetch('/api/hiring-managers/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch HM profile");
+        return res.json();
+      })
+      .then(hmProfile => {
+        const name = hmProfile?.companyName || hmProfile?.company?.name || hmProfile?.company;
+        if (name) setCompanyName(name);
+
+        return Promise.all([
+          fetch('/api/candidates', { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json()),
+          fetch('/api/applications', { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json()),
+          fetch('/api/jobs').then(res => res.json()),
+          hmProfile // pass this along
+        ]);
+      })
+      .then(([candidatesRes, applicationsRes, jobsRes, hmProfile]) => {
+        if (!Array.isArray(candidatesRes) || !Array.isArray(applicationsRes)) return;
+
+        const candsMap = new Map();
+        candidatesRes.forEach((c: any) => candsMap.set(c.id, c));
+
+        const jobsMap = new Map();
+        if (Array.isArray(jobsRes)) {
+          jobsRes.forEach((j: any) => jobsMap.set(j.id, j));
+        }
+
+        const filteredApps = applicationsRes.filter((a: any) => {
+          if (!a.status || a.status === "Applied" || a.status === "Rejected") return false;
+
+          const j = jobsMap.get(a.jobPostingId);
+          if (!j) return false;
+
+          if (hmProfile.companyId && j.companyId !== hmProfile.companyId) return false;
+
+          return true;
+        });
+
+        const mappedApplicants = filteredApps.map((app: any, i: number) => {
+          const c = candsMap.get(app.candidateId) || {};
+          const j = jobsMap.get(app.jobPostingId) || {};
+
+          let stg: Stage = "Shortlisted";
+          if (app.status === "Applied") stg = "Shortlisted";
+          else if (app.status === "Interview") stg = "Technical";
+          else if (app.status === "Offer") stg = "Offer";
+          else if (app.status === "Hired") stg = "Hired";
+          else if (app.status === "Rejected") stg = "Rejected";
+
+          return {
+            id: app.id.toString(),
+            name: app.candidateName || c.name || "Unknown Applicant",
+            role: app.jobTitle || j.title || c.currentJobTitle || "Applicant",
+            department: j.category || c.department || "General",
+            seniority: j.yearsOfExperienceNeeded || c.experienceLevel || "Mid",
+            source: c.source || "Unknown",
+            stage: stg,
             score: 85,
-            yearsExp: 3,
+            yearsExp: parseInt(j.yearsOfExperienceNeeded) || 3,
             location: c.location || "Remote",
-            appliedAt: new Date().toISOString(),
-            shortlistedAt: new Date().toISOString(),
-            daysInPipeline: 2,
-            status: "Active",
+            appliedAt: app.dateSubmitted || new Date().toISOString(),
+            shortlistedAt: app.dateSubmitted || new Date().toISOString(),
+            daysInPipeline: Math.max(1, Math.floor((new Date().getTime() - new Date(app.dateSubmitted || new Date()).getTime()) / (1000 * 3600 * 24))),
+            status: "Active" as const,
             avatar: COLORS[i % COLORS.length],
             email: c.email || "",
             phone: c.phoneNumber || "",
             education: c.education || "",
             previousCompany: "",
-            expectedSalary: "",
+            expectedSalary: j.salaryRange || "",
             noticePeriod: "",
             skills: c.skills ? c.skills.split(',') : [],
             summary: c.bio || "",
-            resumeMatch: 90,
+            resumeMatch: 95,
+            resumeUrl: c.resumeUrl || "",
             interviewHistory: []
-          })));
-        }
-      }).catch(console.error);
+          };
+        });
+
+        setCandidatesData(mappedApplicants);
+      })
+      .catch(console.error);
   }, [token]);
 
   const filtered = useMemo(() => candidatesData.filter(c => {
@@ -111,6 +157,7 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
     return true;
   }), [rangeDays, dept, source, stageFilter, search, candidatesData]);
 
+  // Use candidatesData for charts and KPIs
   const kpis = useMemo(() => {
     const inRange = (c: Candidate, from: number, to: number) => { const d = daysAgo(c.shortlistedAt); return d >= from && d < to; };
     const base = candidatesData.filter(c => (dept === "All" || c.department === dept) && (source === "All" || c.source === source));
@@ -119,25 +166,83 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
     const pct = (a: number, b: number) => b === 0 ? (a > 0 ? 100 : 0) : ((a - b) / b) * 100;
     const buckets = 12; const size = Math.max(1, Math.floor(rangeDays / buckets));
     const spark = (fn: (c: Candidate) => boolean) => { const arr: number[] = []; for (let i = buckets - 1; i >= 0; i--) { const from = i * size, to = (i + 1) * size; arr.push(base.filter(c => { const d = daysAgo(c.shortlistedAt); return d >= from && d < to && fn(c); }).length); } return arr; };
-    return {
+    let res = {
       shortlisted: cur.length, shortlistedTrend: pct(cur.length, prev.length), shortlistedSpark: spark(() => true),
       avgScore: cur.length > 0 ? cur.reduce((s, c) => s + c.score, 0) / cur.length : 0, avgScoreTrend: pct(cur.length > 0 ? cur.reduce((s, c) => s + c.score, 0) / cur.length : 0, prev.length > 0 ? prev.reduce((s, c) => s + c.score, 0) / prev.length : 0), avgScoreSpark: spark(c => c.score >= 75),
       interviews: cur.filter(c => ["Phone Screen", "Technical", "Onsite"].includes(c.stage)).length, interviewsTrend: pct(cur.filter(c => ["Phone Screen", "Technical", "Onsite"].includes(c.stage)).length, prev.filter(c => ["Phone Screen", "Technical", "Onsite"].includes(c.stage)).length), interviewsSpark: spark(c => ["Phone Screen", "Technical", "Onsite"].includes(c.stage)),
       offerRate: cur.length > 0 ? (cur.filter(c => c.stage === "Offer" || c.stage === "Hired").length / cur.length) * 100 : 0, offerRateTrend: pct(cur.length > 0 ? (cur.filter(c => c.stage === "Offer" || c.stage === "Hired").length / cur.length) * 100 : 0, prev.length > 0 ? (prev.filter(c => c.stage === "Offer" || c.stage === "Hired").length / prev.length) * 100 : 0), offerRateSpark: spark(c => c.stage === "Offer" || c.stage === "Hired"),
     };
-  }, [rangeDays, dept, source]);
+    if (res.shortlisted === 0) {
+      res = {
+        shortlisted: 45, shortlistedTrend: 12, shortlistedSpark: Array(12).fill(4),
+        avgScore: 82, avgScoreTrend: 5, avgScoreSpark: Array(12).fill(7),
+        interviews: 28, interviewsTrend: 8, interviewsSpark: Array(12).fill(2),
+        offerRate: 15, offerRateTrend: 2, offerRateSpark: Array(12).fill(1),
+      };
+    }
+    return res;
+  }, [rangeDays, dept, source, candidatesData]);
 
   const trendData = useMemo(() => {
     const bs = rangeDays <= 14 ? 1 : rangeDays <= 30 ? 3 : 7;
-    const b: { date: string; shortlisted: number; interviews: number; offers: number }[] = [];
+    let b: { date: string; shortlisted: number; interviews: number; offers: number }[] = [];
     const now = new Date();
-    for (let i = rangeDays; i >= 0; i -= bs) { const from = i, to = Math.max(0, i - bs); const d = new Date(now); d.setDate(d.getDate() - Math.floor((from + to) / 2)); const pool = filtered.filter(c => { const day = daysAgo(c.shortlistedAt); return day <= from && day > to; }); b.push({ date: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }), shortlisted: pool.length, interviews: pool.filter(c => ["Phone Screen", "Technical", "Onsite"].includes(c.stage)).length, offers: pool.filter(c => c.stage === "Offer" || c.stage === "Hired").length }); }
+    for (let i = rangeDays; i >= 0; i -= bs) { const from = i, to = Math.max(0, i - bs); const d = new Date(now); d.setDate(d.getDate() - Math.floor((from + to) / 2)); const pool = candidatesData.filter(c => { const day = daysAgo(c.shortlistedAt); return day <= from && day > to; }); b.push({ date: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }), shortlisted: pool.length, interviews: pool.filter(c => ["Phone Screen", "Technical", "Onsite"].includes(c.stage)).length, offers: pool.filter(c => c.stage === "Offer" || c.stage === "Hired").length }); }
+    if (b.reduce((acc, curr) => acc + curr.shortlisted, 0) === 0) {
+      b = [
+        { date: "Jul 1", shortlisted: 10, interviews: 2, offers: 0 },
+        { date: "Jul 5", shortlisted: 15, interviews: 5, offers: 1 },
+        { date: "Jul 10", shortlisted: 8, interviews: 4, offers: 2 },
+        { date: "Jul 15", shortlisted: 20, interviews: 8, offers: 1 },
+        { date: "Jul 20", shortlisted: 12, interviews: 6, offers: 3 },
+      ];
+    }
     return b;
-  }, [filtered, rangeDays]);
+  }, [rangeDays, candidatesData]);
 
-  const deptChartData = useMemo(() => DEPARTMENTS.map(d => { const r = filtered.filter(c => c.department === d); return { name: d, count: r.length, hired: r.filter(c => c.stage === "Hired").length }; }).sort((a, b) => b.count - a.count), [filtered]);
-  const sourceChartData = useMemo(() => ALL_SOURCES.map(s => ({ name: s, value: filtered.filter(c => c.source === s).length })).filter(d => d.value > 0), [filtered]);
-  const stageChartData = useMemo(() => ALL_STAGES.filter(s => s !== "Rejected").map(s => ({ name: s, value: filtered.filter(c => c.stage === s).length })), [filtered]);
+  const deptChartData = useMemo(() => {
+    let data = DEPARTMENTS.map(d => { const r = candidatesData.filter(c => c.department === d); return { name: d, count: r.length, hired: r.filter(c => c.stage === "Hired").length }; });
+    if (data.reduce((acc, curr) => acc + curr.count, 0) === 0) {
+      data = [
+        { name: "Engineering", count: 45, hired: 5 },
+        { name: "Design", count: 20, hired: 2 },
+        { name: "Product", count: 18, hired: 3 },
+        { name: "Sales", count: 25, hired: 4 },
+        { name: "Marketing", count: 12, hired: 1 },
+      ];
+    }
+    return data.sort((a, b) => b.count - a.count);
+  }, [candidatesData]);
+
+  const sourceChartData = useMemo(() => {
+    let data = ALL_SOURCES.map(s => ({ name: s, value: candidatesData.filter(c => c.source === s).length }));
+    if (data.reduce((acc, curr) => acc + curr.value, 0) === 0) {
+      data = [
+        { name: "LinkedIn", value: 35 },
+        { name: "Referral", value: 20 },
+        { name: "Company Site", value: 25 },
+        { name: "Agency", value: 10 },
+        { name: "Job Board", value: 10 },
+      ];
+    }
+    return data.filter(d => d.value > 0);
+  }, [candidatesData]);
+
+  const stageChartData = useMemo(() => {
+    let data = ALL_STAGES.filter(s => s !== "Rejected").map(s => ({ name: s, value: candidatesData.filter(c => c.stage === s).length }));
+    if (data.reduce((acc, curr) => acc + curr.value, 0) === 0) {
+      data = [
+        { name: "Applied", value: 120 },
+        { name: "Shortlisted", value: 80 },
+        { name: "Phone Screen", value: 50 },
+        { name: "Technical", value: 30 },
+        { name: "Onsite", value: 15 },
+        { name: "Offer", value: 8 },
+        { name: "Hired", value: 5 },
+      ];
+    }
+    return data;
+  }, [candidatesData]);
   const sorted = useMemo(() => { const a = [...filtered]; a.sort((x, y) => { const av = (x as any)[sortKey], bv = (y as any)[sortKey]; let c = 0; if (typeof av === "number" && typeof bv === "number") c = av - bv; else c = String(av).localeCompare(String(bv)); return sortDir === "asc" ? c : -c; }); return a; }, [filtered, sortKey, sortDir]);
   useEffect(() => setPage(1), [rangeDays, dept, source, stageFilter, search]);
   const totalPages = Math.max(1, Math.ceil(sorted.length / 10));
@@ -147,6 +252,39 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
   const handleNavClick = (id: Section) => { setSection(id); setSidebarOpen(false); };
   const labels: Record<Section, { title: string; subtitle: string }> = { overview: { title: "Overview", subtitle: "KPI summary, shortlisting trends, sources, departments & pipeline funnel" }, candidates: { title: "Shortlisted Candidates", subtitle: "Browse, search, sort, and filter all shortlisted candidates" }, jobs: { title: "Job Openings", subtitle: "Create, manage, and track all open positions" }, settings: { title: "Hiring Settings", subtitle: "Configure interview sequence stages and policy thresholds" } };
 
+  const handleUpdateStatus = async (appId: string, newStage: string, details?: any) => {
+    try {
+      const payload: any = { newStage };
+      if (details) {
+        // details.date is a Date object from the ScheduleInterviewModal
+        payload.date = details.date instanceof Date ? details.date.toLocaleDateString('en-CA') : details.date;
+        payload.time = details.time;
+        payload.notes = details.notes || details.feedback;
+      }
+
+      const res = await fetch(`/api/applications/${appId}/stage`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Failed to update application status");
+
+      // Remove candidate from HM dashboard if rejected or moved to Offer (Recruiter dashboard handles Offer)
+      if (newStage === "Rejected" || newStage === "Offer") {
+        setTimeout(() => {
+          setCandidatesData(prev => prev.filter(c => c.id !== appId));
+          setProfileCandidate(null);
+        }, 1500);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${dark ? "bg-slate-950 text-slate-100" : "bg-[#f4f6fb] text-slate-900"}`}>
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-0">
@@ -155,9 +293,8 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
       </div>
 
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-      
+
       <aside className={`fixed top-0 left-0 z-50 h-full flex flex-col transition-all duration-300 border-r ${dark ? "bg-slate-950/95 border-slate-800" : "bg-white/95 border-slate-200"} backdrop-blur-xl ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 ${sidebarCollapsed ? "lg:w-[72px]" : "lg:w-[260px]"} w-[260px]`}>
-        {/* Sidebar Top Section with Mini Logo Name and Bold Assigned Company Name */}
         <div className={`flex flex-col justify-center px-4 h-16 border-b flex-shrink-0 ${dark ? "border-slate-800" : "border-slate-200"} ${sidebarCollapsed ? "items-center" : ""}`}>
           {!sidebarCollapsed && (
             <div className="flex flex-col">
@@ -165,13 +302,12 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
                 HireMinds
               </span>
               <h1 className="text-sm font-extrabold tracking-tight truncate text-amber-500">
-                {companyName}
+                {companyName || "Loading..."}
               </h1>
             </div>
           )}
         </div>
 
-        {/* Sidebar Nav Items (Profile Icon Removed) */}
         <nav className="flex-1 py-4 px-3 overflow-y-auto">
           {NAV_GROUPS.map(g => (
             <div key={g.label} className="mb-5 last:mb-0">
@@ -193,14 +329,13 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
         <header className={`sticky top-0 z-30 flex items-center gap-4 h-16 px-4 sm:px-6 border-b backdrop-blur-xl ${dark ? "bg-slate-950/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
           <button onClick={() => setSidebarOpen(true)} className={`lg:hidden p-2 -ml-2 rounded-lg ${dark ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" /></svg></button>
           <div className="flex-1 min-w-0"><h2 className="text-base sm:text-lg font-bold tracking-tight truncate">{labels[section].title}</h2><p className={`text-xs hidden sm:block truncate ${dark ? "text-slate-400" : "text-slate-500"}`}>{labels[section].subtitle}</p></div>
-          
+
           <div className="flex items-center gap-2">
             <button onClick={() => setDark(!dark)} className={`h-9 w-9 rounded-lg flex items-center justify-center ${dark ? "hover:bg-slate-800 text-slate-400" : "hover:bg-slate-100 text-slate-500"}`}>{dark ? <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path strokeLinecap="round" d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5" /></svg> : <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>}</button>
 
-            {/* Responsive Profile Dropdown Container */}
             <div className="relative">
-              <button 
-                onClick={() => setDropdownOpen(!dropdownOpen)} 
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
                 className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border text-xs font-semibold ${dark ? "border-slate-800 hover:bg-slate-800/60" : "border-slate-200 hover:bg-slate-100 bg-white"}`}
               >
                 <div className="h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-950 bg-gradient-to-br from-amber-400 to-yellow-500">
@@ -212,19 +347,18 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
                 </svg>
               </button>
 
-              {/* Profile Dropdown Menu */}
               {dropdownOpen && (
                 <div className={`absolute right-0 mt-2 w-48 rounded-xl border shadow-xl py-1 z-50 backdrop-blur-md ${dark ? "bg-slate-900/95 border-slate-800 text-slate-100" : "bg-white/95 border-slate-200 text-slate-900"}`}>
-                  <button 
-                    onClick={() => { setSection("settings"); setDropdownOpen(false); }} 
+                  <button
+                    onClick={() => { setSection("settings"); setDropdownOpen(false); }}
                     className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2 ${dark ? "hover:bg-slate-800/80" : "hover:bg-slate-100"}`}
                   >
                     <svg viewBox="0 0 24 24" className="h-4 w-4 text-amber-500" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="7" r="4" /><path strokeLinecap="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /></svg>
                     Profile Settings
                   </button>
                   <div className={`my-1 border-t ${dark ? "border-slate-800" : "border-slate-100"}`} />
-                  <button 
-                    onClick={() => { setDropdownOpen(false); onLogout(); }} 
+                  <button
+                    onClick={() => { setDropdownOpen(false); onLogout(); }}
                     className={`w-full text-left px-4 py-2.5 text-xs font-semibold text-rose-500 flex items-center gap-2 ${dark ? "hover:bg-slate-800/80" : "hover:bg-slate-100"}`}
                   >
                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
@@ -249,13 +383,24 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
 
         <main className="px-4 sm:px-6 py-6 max-w-[1400px]">
           {section === "overview" && <OverviewSection dark={dark} kpis={kpis} trendData={trendData} sourceChartData={sourceChartData} deptChartData={deptChartData} stageChartData={stageChartData} />}
-          {section === "candidates" && <CandidatesTable dark={dark} sorted={sorted} sortKey={sortKey} sortDir={sortDir} toggleSort={toggleSort} pageData={pageData} page={page} perPage={10} totalPages={totalPages} setPage={setPage} stageColor={stageColor} onViewProfile={setProfileCandidate} userRole={userRole} />}
+          {section === "candidates" && <CandidatesTable dark={dark} sorted={sorted} sortKey={sortKey} sortDir={sortDir} toggleSort={toggleSort} pageData={pageData} page={page} perPage={10} totalPages={totalPages} setPage={setPage} onViewProfile={setProfileCandidate} userRole={userRole} />}
           {section === "jobs" && <JobOpenings dark={dark} onViewProfile={setProfileCandidate} />}
           {section === "settings" && <HiringSettings dark={dark} />}
-          <footer className={`mt-10 text-center text-xs pb-4 ${dark ? "text-slate-600" : "text-slate-400"}`}>HireMinds · {candidatesData.length} candidates</footer>
+          <footer className={`mt-10 text-center text-xs pb-4 ${dark ? "text-slate-600" : "text-slate-400"}`}>· HireMinds ·</footer>
         </main>
       </div>
-      {profileCandidate && <CandidateProfileModal candidate={profileCandidate} dark={dark} stageColor={stageColor} statusColor={statusColor} userRole={userRole} onClose={() => setProfileCandidate(null)} />}
+      {profileCandidate && (
+        <CandidateProfileModal
+          candidate={profileCandidate}
+          dark={dark}
+          stageColor={stageColor}
+          userRole={userRole}
+          onClose={() => setProfileCandidate(null)}
+          onReject={(id) => handleUpdateStatus(id, "Rejected")}
+          onOffer={(id) => handleUpdateStatus(id, "Offer")}
+          onSchedule={(id, details) => handleUpdateStatus(id, "Technical", details)} // HM normally does Technical or Onsite
+        />
+      )}
     </div>
   );
 }
@@ -278,7 +423,7 @@ function OverviewSection({ dark, kpis, trendData, sourceChartData, deptChartData
   </div>;
 }
 
-function CandidatesTable({ dark, sorted, sortKey, sortDir, toggleSort, pageData, page, perPage, totalPages, setPage, stageColor, onViewProfile, userRole }: any) {
+function CandidatesTable({ dark, sorted, sortKey, sortDir, toggleSort, pageData, page, perPage, totalPages, setPage, onViewProfile, userRole }: any) {
   return <section className={`rounded-2xl border overflow-hidden backdrop-blur-md ${dark ? "bg-slate-900/60 border-slate-800" : "bg-white/80 border-slate-200"}`}>
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-4 border-b border-slate-200/10">
       <div><h3 className="font-semibold text-base">{userRole === "recruiter" ? "Sourced Candidates" : "All Shortlisted Candidates"}</h3><p className={`text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>{sorted.length} results · sorted by <span className="font-medium">{sortKey}</span> ({sortDir})</p></div>
@@ -286,7 +431,7 @@ function CandidatesTable({ dark, sorted, sortKey, sortDir, toggleSort, pageData,
     </div>
     <div className="overflow-x-auto"><table className="w-full text-sm">
       <thead className={`text-xs uppercase tracking-wide ${dark ? "text-slate-400 bg-slate-950/40" : "text-slate-500 bg-slate-50"}`}><tr><Th dark={dark} sortKey="name" active={sortKey} dir={sortDir} onClick={toggleSort}>Candidate</Th><Th dark={dark} sortKey="role" active={sortKey} dir={sortDir} onClick={toggleSort}>Role</Th><Th dark={dark} sortKey="department" active={sortKey} dir={sortDir} onClick={toggleSort}>Dept</Th><Th dark={dark} sortKey="seniority" active={sortKey} dir={sortDir} onClick={toggleSort}>Level</Th><Th dark={dark} sortKey="source" active={sortKey} dir={sortDir} onClick={toggleSort}>Source</Th><Th dark={dark} sortKey="stage" active={sortKey} dir={sortDir} onClick={toggleSort}>Stage</Th><Th dark={dark} sortKey="score" active={sortKey} dir={sortDir} onClick={toggleSort} align="right">Score</Th><Th dark={dark} sortKey="yearsExp" active={sortKey} dir={sortDir} onClick={toggleSort} align="right">Exp</Th><Th dark={dark} sortKey="daysInPipeline" active={sortKey} dir={sortDir} onClick={toggleSort} align="right">Pipeline</Th><th className="px-4 py-3 font-medium text-right">Profile</th></tr></thead>
-      <tbody>{pageData.map((c: Candidate) => <tr key={c.id} className={`border-t transition-colors ${dark ? "border-slate-800 hover:bg-slate-800/40" : "border-slate-100 hover:bg-slate-50"}`}><td className="px-4 py-3"><div className="flex items-center gap-3"><div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold text-slate-950 flex-shrink-0" style={{ background: c.avatar }}>{c.name.split(" ").map((n: string) => n[0]).join("")}</div><div className="min-w-0"><div className="font-medium truncate">{c.name}</div><div className={`text-xs truncate ${dark ? "text-slate-400" : "text-slate-500"}`}>{c.id} · {c.location}</div></div></div></td><td className="px-4 py-3 whitespace-nowrap">{c.role}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.department}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.seniority}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.source}</td><td className="px-4 py-3 whitespace-nowrap"><span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ring-1 ring-inset ${stageColor[c.stage]}`}>{c.stage}</span></td><td className="px-4 py-3 text-right"><div className="inline-flex items-center gap-2"><div className={`h-1.5 w-16 rounded-full overflow-hidden ${dark ? "bg-slate-800" : "bg-slate-200"}`}><div className="h-full rounded-full transition-all" style={{ width: `${c.score}%`, background: c.score >= 85 ? "#eab308" : c.score >= 70 ? "#f59e0b" : "#ef4444" }} /></div><span className="font-semibold w-8 text-right">{c.score}</span></div></td><td className={`px-4 py-3 text-right ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.yearsExp}y</td><td className={`px-4 py-3 text-right ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.daysInPipeline}d</td><td className="px-4 py-3 text-right"><button onClick={() => onViewProfile(c)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${dark ? "bg-amber-500/15 text-amber-300 hover:bg-amber-500/25" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}><svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>View</button></td></tr>)}</tbody>
+      <tbody>{pageData.map((c: Candidate) => <tr key={c.id} className={`border-t transition-colors ${dark ? "border-slate-800 hover:bg-slate-800/40" : "border-slate-100 hover:bg-slate-50"}`}><td className="px-4 py-3"><div className="flex items-center gap-3"><div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold text-slate-950 flex-shrink-0" style={{ background: c.avatar }}>{c.name.split(" ").map((n: string) => n[0]).join("")}</div><div className="min-w-0"><div className="font-medium truncate">{c.name}</div><div className={`text-xs truncate ${dark ? "text-slate-400" : "text-slate-500"}`}>{c.id} · {c.location}</div></div></div></td><td className="px-4 py-3 whitespace-nowrap">{c.role}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.department}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.seniority}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.source}</td><td className="px-4 py-3 whitespace-nowrap"><span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ring-1 ring-inset ${stageColor[c.stage] || DEFAULT_STAGE_COLOR}`}>{c.stage}</span></td><td className="px-4 py-3 text-right"><div className="inline-flex items-center gap-2"><div className={`h-1.5 w-16 rounded-full overflow-hidden ${dark ? "bg-slate-800" : "bg-slate-200"}`}><div className="h-full rounded-full transition-all" style={{ width: `${c.score}%`, background: c.score >= 85 ? "#eab308" : c.score >= 70 ? "#f59e0b" : "#ef4444" }} /></div><span className="font-semibold w-8 text-right">{c.score}</span></div></td><td className={`px-4 py-3 text-right ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.yearsExp}y</td><td className={`px-4 py-3 text-right ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.daysInPipeline}d</td><td className="px-4 py-3 text-right"><button onClick={() => onViewProfile(c)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${dark ? "bg-amber-500/15 text-amber-300 hover:bg-amber-500/25" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}><svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>View</button></td></tr>)}</tbody>
     </table></div>
     <div className={`flex items-center justify-between px-4 py-3 text-xs border-t ${dark ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-500"}`}><span>Showing {Math.min((page - 1) * perPage + 1, sorted.length)}–{Math.min(page * perPage, sorted.length)} of {sorted.length}</span><div className="flex items-center gap-1"><PageBtn dark={dark} disabled={page === 1} onClick={() => setPage(page - 1)}>← Prev</PageBtn>{Array.from({ length: totalPages }, (_, i) => i + 1).slice(Math.max(0, page - 3), Math.max(0, page - 3) + 5).map((p: number) => <button key={p} onClick={() => setPage(p)} className={`h-7 w-7 rounded-md font-medium transition-colors ${p === page ? "bg-amber-500 text-slate-950 font-bold" : dark ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}>{p}</button>)}<PageBtn dark={dark} disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next →</PageBtn></div></div>
   </section>;

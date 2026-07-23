@@ -697,4 +697,8 @@ C:\xampp\htdocs\HireMind\backend\src\obj\Debug\net10.0\refint\RecruitmentPlatfor
 C:\xampp\htdocs\HireMind\backend\src\obj\Debug\net10.0\RecruitmentPlatform.API.pdb
 C:\xampp\htdocs\HireMind\backend\src\obj\Debug\net10.0\RecruitmentPlatform.API.genruntimeconfig.cache
 C:\xampp\htdocs\HireMind\backend\src\obj\Debug\net10.0\ref\RecruitmentPlatform.API.dll
+C:\xampp\htdocs\HireMind\backend\src\bin\Debug\net10.0\Ical.Net.dll
+C:\xampp\htdocs\HireMind\backend\src\bin\Debug\net10.0\NodaTime.dll
+C:\xampp\htdocs\HireMind\backend\src\bin\Debug\net10.0\resp.json
+C:\xampp\htdocs\HireMind\backend\src\bin\Debug\net10.0\resp2.json
 C:\xampp\htdocs\HireMind\backend\src\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

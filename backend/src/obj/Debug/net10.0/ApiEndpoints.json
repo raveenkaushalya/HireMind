@@ -518,6 +518,32 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "RecruitmentPlatform.API.Controllers.ContactController",
+    "Method": "SendContactEmail",
+    "RelativePath": "api/Contact",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "RecruitmentPlatform.API.Models.Dtos.Contact.ContactRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "RecruitmentPlatform.API.Models.Dtos.Contact.ContactResponseDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
     "ContainingType": "RecruitmentPlatform.API.Controllers.DashboardController",
     "Method": "GetAdminDashboard",
     "RelativePath": "api/dashboard/admin",

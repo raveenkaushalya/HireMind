@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import {
-  Send, Mail, User, Phone, CheckCircle2, ArrowRight,
+  Send, Mail, User, Phone, CheckCircle2, ArrowRight, AlertCircle,
 } from 'lucide-react';
 
 export default function Contact() {
@@ -12,38 +12,75 @@ export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
   const inputCls = (hasIcon = true) =>
-    `w-full ${hasIcon ? 'pl-10' : 'pl-4'} pr-4 py-3 rounded-xl text-sm outline-none border transition-colors ${
-      isDark
-        ? 'bg-surface-900/80 border-surface-700 text-white placeholder:text-surface-500 focus:border-primary-500'
-        : 'bg-surface-50 border-surface-300 text-surface-900 placeholder:text-surface-400 focus:border-primary-500'
+    `w-full ${hasIcon ? 'pl-10' : 'pl-4'} pr-4 py-3 rounded-xl text-sm outline-none border transition-colors ${isDark
+      ? 'bg-surface-900/80 border-surface-700 text-white placeholder:text-surface-500 focus:border-primary-500'
+      : 'bg-surface-50 border-surface-300 text-surface-900 placeholder:text-surface-400 focus:border-primary-500'
     }`;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setApiError(null);
+
+    // Client-side validation
     const err: Record<string, string> = {};
     if (!form.name.trim()) err.name = 'Name is required.';
     if (!form.email.trim()) err.email = 'Email is required.';
     else if (!/\S+@\S+\.\S+/.test(form.email)) err.email = 'Enter a valid email.';
     if (!form.message.trim()) err.message = 'Message is required.';
     setErrors(err);
+
     if (Object.keys(err).length > 0) return;
 
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSubmitted(true); }, 1000);
+
+    try {
+      // Point this URL to your ASP.NET Core backend endpoint
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim() === '' ? null : form.phone.trim(),
+        subject: form.subject.trim() === '' ? null : form.subject.trim(),
+        message: form.message.trim(),
+      };
+
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        let errorMsg = data?.message;
+        if (data?.title === "One or more validation errors occurred." && data?.errors) {
+          errorMsg = Object.values(data.errors).flat().join(" ");
+        }
+        throw new Error(errorMsg || 'Failed to send message. Please try again later.');
+      }
+
+      setSubmitted(true);
+      setForm({ name: '', email: '', phone: '', subject: '', message: '' });
+    } catch (error: any) {
+      setApiError(error.message || 'An unexpected error occurred.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <section id="get-in-touch" className={`relative py-16 lg:py-20 ${isDark ? 'bg-surface-950' : 'bg-white'}`}>
+    <section id="contact-us" className={`relative py-16 lg:py-20 ${isDark ? 'bg-surface-950' : 'bg-white'}`}>
       <div className="relative w-full px-6 sm:px-10 lg:px-16">
 
         {/* Outer card wrapper */}
-        <div className={`relative rounded-3xl overflow-hidden ${
-          isDark ? 'bg-gradient-to-br from-[#040720] via-[#0a0e2a] to-[#0f1535] border border-[#1a1f45]' : 'bg-gradient-to-br from-surface-50 to-surface-100 border border-surface-200'
-        }`}>
+        <div className={`relative rounded-3xl overflow-hidden ${isDark ? 'bg-gradient-to-br from-[#040720] via-[#0a0e2a] to-[#0f1535] border border-[#1a1f45]' : 'bg-gradient-to-br from-surface-50 to-surface-100 border border-surface-200'
+          }`}>
           {/* Background decoration */}
           <div className="absolute inset-0 overflow-hidden">
             <div className={`absolute -top-32 -right-32 w-80 h-80 rounded-full blur-3xl ${isDark ? 'bg-primary-500/5' : 'bg-primary-100/50'}`} />
@@ -57,9 +94,8 @@ export default function Contact() {
 
               {/* Left — Heading + Info (2 cols) */}
               <div className="lg:col-span-2 flex flex-col justify-center">
-                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 self-start ${
-                  isDark ? 'bg-white/5 border border-white/10' : 'bg-primary-50 border border-primary-200'
-                }`}>
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 self-start ${isDark ? 'bg-white/5 border border-white/10' : 'bg-primary-50 border border-primary-200'
+                  }`}>
                   <span className={`text-sm font-semibold ${isDark ? 'text-primary-300' : 'text-primary-600'}`}>Get in Touch</span>
                 </div>
                 <h2 className={`font-display text-3xl sm:text-4xl font-bold tracking-tight mb-4 ${isDark ? 'text-white' : 'text-surface-900'}`}>
@@ -91,11 +127,18 @@ export default function Contact() {
 
               {/* Right — Form (3 cols) */}
               <div className="lg:col-span-3">
-                <div className={`rounded-2xl p-6 sm:p-8 ${
-                  isDark ? 'bg-surface-900/60 border border-surface-700/40' : 'bg-white border border-surface-200 shadow-lg shadow-surface-200/30'
-                }`}>
+                <div className={`rounded-2xl p-6 sm:p-8 ${isDark ? 'bg-surface-900/60 border border-surface-700/40' : 'bg-white border border-surface-200 shadow-lg shadow-surface-200/30'
+                  }`}>
                   {!submitted ? (
                     <form onSubmit={handleSubmit} className="space-y-5">
+                      {/* API Global Error Alert */}
+                      {apiError && (
+                        <div className="flex items-center gap-2 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{apiError}</span>
+                        </div>
+                      )}
+
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div>
                           <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-surface-300' : 'text-surface-700'}`}>
@@ -139,10 +182,9 @@ export default function Contact() {
                         </label>
                         <textarea value={form.message} onChange={e => set('message', e.target.value)} rows={4}
                           placeholder="Tell us what's on your mind..."
-                          className={`w-full pl-4 pr-4 py-3 rounded-xl text-sm outline-none border resize-none transition-colors ${
-                            isDark ? 'bg-surface-900/80 border-surface-700 text-white placeholder:text-surface-500 focus:border-primary-500'
-                                 : 'bg-surface-50 border-surface-300 text-surface-900 placeholder:text-surface-400 focus:border-primary-500'
-                          }`} />
+                          className={`w-full pl-4 pr-4 py-3 rounded-xl text-sm outline-none border resize-none transition-colors ${isDark ? 'bg-surface-900/80 border-surface-700 text-white placeholder:text-surface-500 focus:border-primary-500'
+                            : 'bg-surface-50 border-surface-300 text-surface-900 placeholder:text-surface-400 focus:border-primary-500'
+                            }`} />
                         {errors.message && <p className="text-xs text-red-400 mt-1">{errors.message}</p>}
                       </div>
 
@@ -160,7 +202,7 @@ export default function Contact() {
                       </div>
                       <h3 className={`font-display font-bold text-xl mb-2 ${isDark ? 'text-white' : 'text-surface-900'}`}>Message Sent!</h3>
                       <p className={`text-sm mb-6 ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
-                        Thank you for reaching out. We'll get back to you within 24 hours.
+                        Thank you for reaching out. We value your feedbacks. We'll get back to you soon.
                       </p>
                       <button onClick={() => { setSubmitted(false); setForm({ name: '', email: '', phone: '', subject: '', message: '' }); }}
                         className="inline-flex items-center gap-2 text-sm font-semibold cursor-pointer text-primary-500 hover:text-primary-400 transition-colors">

@@ -424,9 +424,9 @@ export default function CompanyDashboard({ onLogout }: Props) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <h3 className="text-sm font-bold text-amber-300">
-                      {stats.pending} hiring manager{stats.pending !== 1 ? "s" : ""} pending admin approval
+                      {stats.pending} hiring manager{stats.pending !== 1 ? "s" : ""} pending
                     </h3>
-                    <p className="text-xs text-slate-400 mt-1">These managers were added by you and are awaiting HireMinds admin review. Once approved, they'll receive an email to set up their portal password.</p>
+                    <p className="text-xs text-slate-400 mt-1">Successfully added. They'll receive an email to set up their portal password.</p>
                     <button
                       onClick={() => { setTab("hiring_managers"); setStatusFilter("Pending Approval"); }}
                       className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 transition-colors"
@@ -570,7 +570,11 @@ export default function CompanyDashboard({ onLogout }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <ProfileInput label="Company Name" value={profileEdit.name} onChange={(v) => setProfileEdit({ ...profileEdit, name: v })} />
                 <ProfileSelect label="Industry" value={profileEdit.industry} onChange={(v) => setProfileEdit({ ...profileEdit, industry: v })}
-                  options={["Enterprise SaaS", "AI Infrastructure", "Content Platform", "HealthTech", "FinTech", "E-commerce", "Manufacturing", "Consulting"]} />
+                  options={[
+                    'IT & Technology', 'Engineering', 'Healthcare & Pharma', 'Education',
+                    'Banking & Finance', 'Human Resources', 'Design & Marketing',
+                    'Logistics & Supply Chain', 'Apparel & Manufacturing', 'Hospitality & Tourism', 'Other'
+                  ]} />
                 <ProfileSelect label="Company Size" value={profileEdit.size} onChange={(v) => setProfileEdit({ ...profileEdit, size: v })}
                   options={["1-50 employees", "51-200 employees", "201-500 employees", "501-1000 employees", "1000+ employees"]} />
                 <ProfileSelect label="Location" value={profileEdit.location} onChange={(v) => setProfileEdit({ ...profileEdit, location: v })}

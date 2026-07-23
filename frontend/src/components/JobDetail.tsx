@@ -262,7 +262,7 @@ export default function JobDetail({ job, onClose }: { job: Job; onClose: () => v
                 <Users className="w-4 h-4" /> {job.applicants} applicants
               </span>
               <span className={`inline-flex items-center gap-1.5 text-sm ${isDark ? 'text-surface-300' : 'text-surface-600'}`}>
-                <GraduationCap className="w-4 h-4" /> {job.minQualification || "Any"} Minimum Education
+                <GraduationCap className="w-4 h-4" /> {job.minQualification || "Any"}
               </span>
               <span className={`inline-flex items-center gap-1.5 text-sm ${isDark ? 'text-surface-300' : 'text-surface-600'}`}>
                 <Briefcase className="w-4 h-4" /> {job.experience} Years of Experience
@@ -492,7 +492,7 @@ export default function JobDetail({ job, onClose }: { job: Job; onClose: () => v
                       <ArrowRight className="w-4 h-4" />
                     </button>
                     <p className={`text-xs mt-3 ${isDark ? 'text-surface-500' : 'text-surface-400'}`}>
-                      Free account — no credit card required
+                      Free account - no credit card required
                     </p>
                   </div>
                 )}

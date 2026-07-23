@@ -29,6 +29,10 @@ export default function CompanySetupPassword() {
             setError("Password must be at least 6 characters");
             return;
         }
+        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/.test(password)) {
+            setError("Password must include uppercase, lowercase, and numbers");
+            return;
+        }
 
         try {
             setIsLoading(true);

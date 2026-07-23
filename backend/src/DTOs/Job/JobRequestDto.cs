@@ -18,5 +18,6 @@ namespace RecruitmentPlatform.API.DTOs.Job
         public string? Requirements { get; set; }
         public string? MinQualification { get; set; }
         public string? Status { get; set; } = "Open";
+        public bool IsUrgent { get; set; } = false;
     }
 }

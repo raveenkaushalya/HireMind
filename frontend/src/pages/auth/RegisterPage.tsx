@@ -57,7 +57,11 @@ const initialForm: FormData = {
 
 const experienceOptions = ['Fresh Graduate', 'Less than 1 year', '1-2 years', '3-5 years', '5-10 years', '10+ years'];
 const companySizeOptions = ['1-10 employees', '11-50 employees', '51-200 employees', '201-1000 employees', '1000+ employees'];
-const industryOptions = ['Technology', 'Healthcare', 'Finance', 'Education', 'E-commerce', 'Manufacturing', 'Consulting', 'Media', 'Other'];
+const industryOptions = [
+  'IT & Technology', 'Engineering', 'Healthcare & Pharma', 'Education',
+  'Banking & Finance', 'Human Resources', 'Design & Marketing',
+  'Logistics & Supply Chain', 'Apparel & Manufacturing', 'Hospitality & Tourism', 'Other'
+];
 
 const roles: { id: Role; title: string; question: string; desc: string; icon: typeof User; color: string }[] = [
   { id: 'candidate', title: 'Job Seeker', question: 'Are you a job seeker?', desc: 'Find your dream job with AI-powered matching, skill insights, and smart resume analysis.', icon: Search, color: 'from-blue-500 to-cyan-500' },
@@ -179,6 +183,7 @@ export default function RegisterPage() {
       else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email.';
       if (!form.password) e.password = 'Required.';
       else if (form.password.length < 6) e.password = 'Min 6 characters.';
+      else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/.test(form.password)) e.password = 'Must include uppercase, lowercase, and numbers.';
       if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match.';
       if (!form.location.trim()) e.location = 'Required.';
       if (!form.experience) e.experience = 'Required.';
@@ -348,7 +353,7 @@ export default function RegisterPage() {
               <span className="bg-gradient-to-r from-primary-300 to-primary-200 bg-clip-text text-transparent">of recruitment</span>
             </h2>
             <p className="text-white/60 text-base mb-8 max-w-sm">
-              Whether you're a job seeker or a company — HireMinds. connects the right people faster.
+              Whether you're a job seeker or a company, Connects the right people faster.
             </p>
             <div className="space-y-3">
               {['AI-scored candidate matching', 'Company verification & trust', 'Smart resume parsing & skill extraction', 'Real-time analytics dashboard'].map(f => (
