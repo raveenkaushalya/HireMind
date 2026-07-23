@@ -4,6 +4,7 @@ import { ShortlistTrendChart, DepartmentBarChart, SourceDonutChart, StageFunnelC
 import CandidateProfileModal from "../../../components/dashboard/recruitment/CandidateProfileModal";
 import HiringSettings from "../../../components/dashboard/recruitment/HiringSettings";
 import JobOpenings from "../../../components/dashboard/recruitment/JobOpenings";
+import { useAuth } from "../../../context/AuthContext";
 
 type SortKey = "name" | "role" | "department" | "seniority" | "source" | "stage" | "score" | "yearsExp" | "daysInPipeline" | "shortlistedAt";
 type Section = "overview" | "candidates" | "jobs" | "settings";
@@ -15,16 +16,15 @@ const SECTIONS: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: "jobs", label: "Job Openings", icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="7" width="18" height="13" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M3 13h18" /></svg> },
   { id: "settings", label: "Settings", icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
 ];
+
 const RANGE_OPTIONS = [{ label: "7d", days: 7 }, { label: "30d", days: 30 }, { label: "60d", days: 60 }, { label: "90d", days: 90 }];
 const NAV_GROUPS = [{ label: "Dashboard", ids: ["overview"] }, { label: "Management", ids: ["candidates", "jobs"] }, { label: "System", ids: ["settings"] }];
 function daysAgo(iso: string) { return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); }
-const stageColor: Record<Stage, string> = { Shortlisted: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 ring-indigo-500/30", "Phone Screen": "bg-sky-500/15 text-sky-600 dark:text-sky-300 ring-sky-500/30", Technical: "bg-violet-500/15 text-violet-600 dark:text-violet-300 ring-violet-500/30", Onsite: "bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/30", Offer: "bg-pink-500/15 text-pink-600 dark:text-pink-300 ring-pink-500/30", Hired: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 ring-emerald-500/30", Rejected: "bg-rose-500/15 text-rose-600 dark:text-rose-300 ring-rose-500/30" };
+const stageColor: Record<Stage, string> = { Shortlisted: "bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/30", "Phone Screen": "bg-sky-500/15 text-sky-600 dark:text-sky-300 ring-sky-500/30", Technical: "bg-violet-500/15 text-violet-600 dark:text-violet-300 ring-violet-500/30", Onsite: "bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/30", Offer: "bg-pink-500/15 text-pink-600 dark:text-pink-300 ring-pink-500/30", Hired: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 ring-emerald-500/30", Rejected: "bg-rose-500/15 text-rose-600 dark:text-rose-300 ring-rose-500/30" };
 const statusColor = { Active: "bg-emerald-500", "On Hold": "bg-amber-500", Rejected: "bg-rose-500", Offer: "bg-pink-500", Hired: "bg-teal-500" };
 
-import { useAuth } from "../../../context/AuthContext";
-
 export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogout: () => void; onSwitch: () => void }) {
-  const { token, username } = useAuth();
+  const { token } = useAuth();
   const [dark, setDark] = useState(true);
   const [section, setSection] = useState<Section>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -38,13 +38,31 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [profileCandidate, setProfileCandidate] = useState<Candidate | null>(null);
-  const [showLogout, setShowLogout] = useState(false);
+  
+  // Dropdown / Profile Menu State
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [companyName, setCompanyName] = useState<string>("Acme Inc.");
   const userRole: Role = "hiring_manager";
 
-  const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981", "#14b8a6", "#0ea5e9"];
+  const COLORS = ["#eab308", "#ca8a04", "#d97706", "#f59e0b", "#10b981", "#14b8a6", "#0ea5e9"];
   const [candidatesData, setCandidatesData] = useState<Candidate[]>([]);
 
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
+
+  // Fetch Hiring Manager Profile to retrieve assigned company name
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/hiring-managers/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(profile => {
+        if (profile?.companyName) {
+          setCompanyName(profile.companyName);
+        }
+      })
+      .catch(console.error);
+  }, [token]);
 
   useEffect(() => {
     fetch('/api/candidates', {
@@ -131,36 +149,104 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${dark ? "bg-slate-950 text-slate-100" : "bg-[#f4f6fb] text-slate-900"}`}>
-      <div className="pointer-events-none fixed inset-0 overflow-hidden -z-0"><div className={`absolute -top-40 -left-40 h-96 w-96 rounded-full blur-3xl opacity-20 ${dark ? "bg-indigo-500" : "bg-indigo-300"}`} /><div className={`absolute top-1/3 -right-40 h-96 w-96 rounded-full blur-3xl opacity-20 ${dark ? "bg-teal-500" : "bg-teal-300"}`} /></div>
+      <div className="pointer-events-none fixed inset-0 overflow-hidden -z-0">
+        <div className={`absolute -top-40 -left-40 h-96 w-96 rounded-full blur-3xl opacity-20 ${dark ? "bg-yellow-600" : "bg-amber-300"}`} />
+        <div className={`absolute top-1/3 -right-40 h-96 w-96 rounded-full blur-3xl opacity-20 ${dark ? "bg-amber-600" : "bg-yellow-200"}`} />
+      </div>
+
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-      <aside className={`fixed top-0 left-0 z-50 h-full flex flex-col transition-all duration-300 border-r ${dark ? "bg-slate-950/95 border-slate-800" : "bg-white/95 border-slate-200"} backdrop-blur-xl ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 ${sidebarCollapsed ? "lg:w-[72px]" : "lg:w-[260px]"} w-[260px`}>
-        <div className={`flex items-center gap-3 px-4 h-16 border-b flex-shrink-0 ${dark ? "border-slate-800" : "border-slate-200"} ${sidebarCollapsed ? "justify-center" : ""}`}>
-          {!sidebarCollapsed && <h1 className="text-xl font-extrabold tracking-tight truncate"><span className={dark ? "text-white" : "text-slate-900"}>Hire</span><span style={{ color: "#eab308" }}>Minds</span><span className="text-red-500">.</span></h1>}
-          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className={`${sidebarCollapsed ? "" : "ml-auto"} hidden lg:flex p-1.5 rounded-lg transition-colors ${dark ? "hover:bg-slate-800 text-slate-400 hover:text-slate-100" : "hover:bg-slate-100 text-slate-400 hover:text-slate-700"}`}><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" /></svg></button>
-          {!sidebarCollapsed && <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden p-1.5 rounded-lg"><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" /></svg></button>}
+      
+      <aside className={`fixed top-0 left-0 z-50 h-full flex flex-col transition-all duration-300 border-r ${dark ? "bg-slate-950/95 border-slate-800" : "bg-white/95 border-slate-200"} backdrop-blur-xl ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 ${sidebarCollapsed ? "lg:w-[72px]" : "lg:w-[260px]"} w-[260px]`}>
+        {/* Sidebar Top Section with Mini Logo Name and Bold Assigned Company Name */}
+        <div className={`flex flex-col justify-center px-4 h-16 border-b flex-shrink-0 ${dark ? "border-slate-800" : "border-slate-200"} ${sidebarCollapsed ? "items-center" : ""}`}>
+          {!sidebarCollapsed && (
+            <div className="flex flex-col">
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${dark ? "text-slate-400" : "text-slate-500"}`}>
+                HireMinds
+              </span>
+              <h1 className="text-sm font-extrabold tracking-tight truncate text-amber-500">
+                {companyName}
+              </h1>
+            </div>
+          )}
         </div>
-        <nav className="flex-1 py-4 px-3 overflow-y-auto">{NAV_GROUPS.map(g => <div key={g.label} className="mb-5 last:mb-0">{!sidebarCollapsed && <p className={`px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] ${dark ? "text-slate-600" : "text-slate-400"}`}>{g.label}</p>}<div className="space-y-1">{SECTIONS.filter(s => g.ids.includes(s.id)).map(s => <button key={s.id} onClick={() => handleNavClick(s.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${section === s.id ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"} ${sidebarCollapsed ? "justify-center" : ""}`}><span className="flex-shrink-0">{s.icon}</span>{!sidebarCollapsed && <span className="truncate">{s.label}</span>}</button>)}</div></div>)}</nav>
+
+        {/* Sidebar Nav Items (Profile Icon Removed) */}
+        <nav className="flex-1 py-4 px-3 overflow-y-auto">
+          {NAV_GROUPS.map(g => (
+            <div key={g.label} className="mb-5 last:mb-0">
+              {!sidebarCollapsed && <p className={`px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] ${dark ? "text-slate-600" : "text-slate-400"}`}>{g.label}</p>}
+              <div className="space-y-1">
+                {SECTIONS.filter(s => g.ids.includes(s.id)).map(s => (
+                  <button key={s.id} onClick={() => handleNavClick(s.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${section === s.id ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-semibold shadow-lg shadow-amber-500/20" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"} ${sidebarCollapsed ? "justify-center" : ""}`}>
+                    <span className="flex-shrink-0">{s.icon}</span>
+                    {!sidebarCollapsed && <span className="truncate">{s.label}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
       </aside>
+
       <div className={`relative z-10 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[72px]" : "lg:ml-[260px]"}`}>
         <header className={`sticky top-0 z-30 flex items-center gap-4 h-16 px-4 sm:px-6 border-b backdrop-blur-xl ${dark ? "bg-slate-950/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
           <button onClick={() => setSidebarOpen(true)} className={`lg:hidden p-2 -ml-2 rounded-lg ${dark ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" /></svg></button>
           <div className="flex-1 min-w-0"><h2 className="text-base sm:text-lg font-bold tracking-tight truncate">{labels[section].title}</h2><p className={`text-xs hidden sm:block truncate ${dark ? "text-slate-400" : "text-slate-500"}`}>{labels[section].subtitle}</p></div>
-          <div className="flex items-center gap-1.5">
-            <button className={`relative h-9 w-9 rounded-lg flex items-center justify-center ${dark ? "hover:bg-slate-800 text-slate-400" : "hover:bg-slate-100 text-slate-500"}`}><svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3A6 6 0 006 11v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg><span className="absolute top-1.5 right-1.5 h-3.5 w-3.5 rounded-full bg-indigo-500 text-[8px] font-bold text-white flex items-center justify-center">5</span></button>
+          
+          <div className="flex items-center gap-2">
             <button onClick={() => setDark(!dark)} className={`h-9 w-9 rounded-lg flex items-center justify-center ${dark ? "hover:bg-slate-800 text-slate-400" : "hover:bg-slate-100 text-slate-500"}`}>{dark ? <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path strokeLinecap="round" d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5" /></svg> : <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>}</button>
-            <button onClick={() => setShowLogout(true)} className={`hidden md:flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border text-xs font-semibold ${dark ? "border-slate-800 hover:bg-slate-800/60" : "border-slate-200 hover:bg-slate-100 bg-white"}`}><div className="h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-br from-violet-500 to-pink-500">HM</div><span>Hello, Manager</span><svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 ${dark ? "text-slate-500" : "text-slate-400"}`} fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg></button>
+
+            {/* Responsive Profile Dropdown Container */}
+            <div className="relative">
+              <button 
+                onClick={() => setDropdownOpen(!dropdownOpen)} 
+                className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border text-xs font-semibold ${dark ? "border-slate-800 hover:bg-slate-800/60" : "border-slate-200 hover:bg-slate-100 bg-white"}`}
+              >
+                <div className="h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-950 bg-gradient-to-br from-amber-400 to-yellow-500">
+                  HM
+                </div>
+                <span className="hidden sm:inline">Manager</span>
+                <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 transition-transform ${dropdownOpen ? "rotate-180" : ""} ${dark ? "text-slate-500" : "text-slate-400"}`} fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Profile Dropdown Menu */}
+              {dropdownOpen && (
+                <div className={`absolute right-0 mt-2 w-48 rounded-xl border shadow-xl py-1 z-50 backdrop-blur-md ${dark ? "bg-slate-900/95 border-slate-800 text-slate-100" : "bg-white/95 border-slate-200 text-slate-900"}`}>
+                  <button 
+                    onClick={() => { setSection("settings"); setDropdownOpen(false); }} 
+                    className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2 ${dark ? "hover:bg-slate-800/80" : "hover:bg-slate-100"}`}
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4 w-4 text-amber-500" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="7" r="4" /><path strokeLinecap="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /></svg>
+                    Profile Settings
+                  </button>
+                  <div className={`my-1 border-t ${dark ? "border-slate-800" : "border-slate-100"}`} />
+                  <button 
+                    onClick={() => { setDropdownOpen(false); onLogout(); }} 
+                    className={`w-full text-left px-4 py-2.5 text-xs font-semibold text-rose-500 flex items-center gap-2 ${dark ? "hover:bg-slate-800/80" : "hover:bg-slate-100"}`}
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
+
         <div className={`border-b px-4 sm:px-6 py-3 ${dark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50/80 border-slate-200/70"}`}>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px]"><svg viewBox="0 0 24 24" className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${dark ? "text-slate-500" : "text-slate-400"}`} fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path strokeLinecap="round" d="M21 21l-4.3-4.3" /></svg><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, role, ID…" className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none transition-colors ${dark ? "bg-slate-900/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:border-indigo-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500"}`} /></div>
-            <div className={`flex rounded-lg p-0.5 text-xs ${dark ? "bg-slate-900/60 border border-slate-800" : "bg-slate-100 border border-slate-200"}`}>{RANGE_OPTIONS.map(r => <button key={r.label} onClick={() => setRangeDays(r.days)} className={`px-3 py-1.5 rounded-md font-medium ${rangeDays === r.days ? (dark ? "bg-indigo-500 text-white" : "bg-white text-slate-900 shadow") : (dark ? "text-slate-400" : "text-slate-500")}`}>{r.label}</button>)}</div>
+            <div className="relative flex-1 min-w-[200px]"><svg viewBox="0 0 24 24" className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${dark ? "text-slate-500" : "text-slate-400"}`} fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path strokeLinecap="round" d="M21 21l-4.3-4.3" /></svg><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, role, ID…" className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none transition-colors ${dark ? "bg-slate-900/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:border-amber-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-amber-500"}`} /></div>
+            <div className={`flex rounded-lg p-0.5 text-xs ${dark ? "bg-slate-900/60 border border-slate-800" : "bg-slate-100 border border-slate-200"}`}>{RANGE_OPTIONS.map(r => <button key={r.label} onClick={() => setRangeDays(r.days)} className={`px-3 py-1.5 rounded-md font-medium ${rangeDays === r.days ? "bg-amber-500 text-slate-950 shadow font-bold" : (dark ? "text-slate-400" : "text-slate-500")}`}>{r.label}</button>)}</div>
             <Select dark={dark} value={dept} onChange={(v: string) => setDept(v as Department | "All")} options={["All", ...DEPARTMENTS]} label="Dept" />
             <Select dark={dark} value={source} onChange={(v: string) => setSource(v as Source | "All")} options={["All", ...ALL_SOURCES]} label="Source" />
             <Select dark={dark} value={stageFilter} onChange={(v: string) => setStageFilter(v as Stage | "All")} options={["All", ...ALL_STAGES]} label="Stage" />
             <button onClick={resetFilters} className={`px-3 py-2 rounded-lg text-xs font-medium ${dark ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-900"}`}>Reset</button>
           </div>
         </div>
+
         <main className="px-4 sm:px-6 py-6 max-w-[1400px]">
           {section === "overview" && <OverviewSection dark={dark} kpis={kpis} trendData={trendData} sourceChartData={sourceChartData} deptChartData={deptChartData} stageChartData={stageChartData} />}
           {section === "candidates" && <CandidatesTable dark={dark} sorted={sorted} sortKey={sortKey} sortDir={sortDir} toggleSort={toggleSort} pageData={pageData} page={page} perPage={10} totalPages={totalPages} setPage={setPage} stageColor={stageColor} onViewProfile={setProfileCandidate} userRole={userRole} />}
@@ -170,7 +256,6 @@ export default function HiringManagerDashboard({ onLogout, onSwitch }: { onLogou
         </main>
       </div>
       {profileCandidate && <CandidateProfileModal candidate={profileCandidate} dark={dark} stageColor={stageColor} statusColor={statusColor} userRole={userRole} onClose={() => setProfileCandidate(null)} />}
-      {showLogout && <LogoutModal dark={dark} onClose={() => setShowLogout(false)} onLogout={onLogout} onSwitch={onSwitch} />}
     </div>
   );
 }
@@ -179,9 +264,9 @@ function OverviewSection({ dark, kpis, trendData, sourceChartData, deptChartData
   return <div className="space-y-6 animate-fadeIn">
     <WelcomeHero dark={dark} userRole="hiring_manager" />
     <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <KpiCard dark={dark} label="In Interview" value={kpis.interviews.toLocaleString()} color="#0ea5e9" icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4z" /></svg>} />
-      <KpiCard dark={dark} label="Shortlisted" value={kpis.shortlisted.toLocaleString()} color="#6366f1" icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 01-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>} />
-      <KpiCard dark={dark} label="Avg Score" value={kpis.avgScore.toFixed(0)} suffix="/100" color="#14b8a6" icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.98 10.11c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>} />
+      <KpiCard dark={dark} label="In Interview" value={kpis.interviews.toLocaleString()} color="#eab308" icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4z" /></svg>} />
+      <KpiCard dark={dark} label="Shortlisted" value={kpis.shortlisted.toLocaleString()} color="#ca8a04" icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 01-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>} />
+      <KpiCard dark={dark} label="Avg Score" value={kpis.avgScore.toFixed(0)} suffix="/100" color="#d97706" icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.98 10.11c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>} />
       <KpiCard dark={dark} label="Offer Rate" value={kpis.offerRate.toFixed(0)} suffix="%" color="#f59e0b" icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 01-9 9 9 9 0 01-9-9 9 9 0 019 9z" /></svg>} />
     </section>
     <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -201,16 +286,15 @@ function CandidatesTable({ dark, sorted, sortKey, sortDir, toggleSort, pageData,
     </div>
     <div className="overflow-x-auto"><table className="w-full text-sm">
       <thead className={`text-xs uppercase tracking-wide ${dark ? "text-slate-400 bg-slate-950/40" : "text-slate-500 bg-slate-50"}`}><tr><Th dark={dark} sortKey="name" active={sortKey} dir={sortDir} onClick={toggleSort}>Candidate</Th><Th dark={dark} sortKey="role" active={sortKey} dir={sortDir} onClick={toggleSort}>Role</Th><Th dark={dark} sortKey="department" active={sortKey} dir={sortDir} onClick={toggleSort}>Dept</Th><Th dark={dark} sortKey="seniority" active={sortKey} dir={sortDir} onClick={toggleSort}>Level</Th><Th dark={dark} sortKey="source" active={sortKey} dir={sortDir} onClick={toggleSort}>Source</Th><Th dark={dark} sortKey="stage" active={sortKey} dir={sortDir} onClick={toggleSort}>Stage</Th><Th dark={dark} sortKey="score" active={sortKey} dir={sortDir} onClick={toggleSort} align="right">Score</Th><Th dark={dark} sortKey="yearsExp" active={sortKey} dir={sortDir} onClick={toggleSort} align="right">Exp</Th><Th dark={dark} sortKey="daysInPipeline" active={sortKey} dir={sortDir} onClick={toggleSort} align="right">Pipeline</Th><th className="px-4 py-3 font-medium text-right">Profile</th></tr></thead>
-      <tbody>{pageData.map((c: Candidate) => <tr key={c.id} className={`border-t transition-colors ${dark ? "border-slate-800 hover:bg-slate-800/40" : "border-slate-100 hover:bg-slate-50"}`}><td className="px-4 py-3"><div className="flex items-center gap-3"><div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold text-white flex-shrink-0" style={{ background: c.avatar }}>{c.name.split(" ").map((n: string) => n[0]).join("")}</div><div className="min-w-0"><div className="font-medium truncate">{c.name}</div><div className={`text-xs truncate ${dark ? "text-slate-400" : "text-slate-500"}`}>{c.id} · {c.location}</div></div></div></td><td className="px-4 py-3 whitespace-nowrap">{c.role}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.department}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.seniority}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.source}</td><td className="px-4 py-3 whitespace-nowrap"><span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ring-1 ring-inset ${stageColor[c.stage]}`}>{c.stage}</span></td><td className="px-4 py-3 text-right"><div className="inline-flex items-center gap-2"><div className={`h-1.5 w-16 rounded-full overflow-hidden ${dark ? "bg-slate-800" : "bg-slate-200"}`}><div className="h-full rounded-full transition-all" style={{ width: `${c.score}%`, background: c.score >= 85 ? "#10b981" : c.score >= 70 ? "#f59e0b" : "#ef4444" }} /></div><span className="font-semibold w-8 text-right">{c.score}</span></div></td><td className={`px-4 py-3 text-right ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.yearsExp}y</td><td className={`px-4 py-3 text-right ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.daysInPipeline}d</td><td className="px-4 py-3 text-right"><button onClick={() => onViewProfile(c)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${dark ? "bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25" : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"}`}><svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>View</button></td></tr>)}</tbody>
+      <tbody>{pageData.map((c: Candidate) => <tr key={c.id} className={`border-t transition-colors ${dark ? "border-slate-800 hover:bg-slate-800/40" : "border-slate-100 hover:bg-slate-50"}`}><td className="px-4 py-3"><div className="flex items-center gap-3"><div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold text-slate-950 flex-shrink-0" style={{ background: c.avatar }}>{c.name.split(" ").map((n: string) => n[0]).join("")}</div><div className="min-w-0"><div className="font-medium truncate">{c.name}</div><div className={`text-xs truncate ${dark ? "text-slate-400" : "text-slate-500"}`}>{c.id} · {c.location}</div></div></div></td><td className="px-4 py-3 whitespace-nowrap">{c.role}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.department}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.seniority}</td><td className={`px-4 py-3 whitespace-nowrap ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.source}</td><td className="px-4 py-3 whitespace-nowrap"><span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ring-1 ring-inset ${stageColor[c.stage]}`}>{c.stage}</span></td><td className="px-4 py-3 text-right"><div className="inline-flex items-center gap-2"><div className={`h-1.5 w-16 rounded-full overflow-hidden ${dark ? "bg-slate-800" : "bg-slate-200"}`}><div className="h-full rounded-full transition-all" style={{ width: `${c.score}%`, background: c.score >= 85 ? "#eab308" : c.score >= 70 ? "#f59e0b" : "#ef4444" }} /></div><span className="font-semibold w-8 text-right">{c.score}</span></div></td><td className={`px-4 py-3 text-right ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.yearsExp}y</td><td className={`px-4 py-3 text-right ${dark ? "text-slate-300" : "text-slate-600"}`}>{c.daysInPipeline}d</td><td className="px-4 py-3 text-right"><button onClick={() => onViewProfile(c)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${dark ? "bg-amber-500/15 text-amber-300 hover:bg-amber-500/25" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}><svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>View</button></td></tr>)}</tbody>
     </table></div>
-    <div className={`flex items-center justify-between px-4 py-3 text-xs border-t ${dark ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-500"}`}><span>Showing {Math.min((page - 1) * perPage + 1, sorted.length)}–{Math.min(page * perPage, sorted.length)} of {sorted.length}</span><div className="flex items-center gap-1"><PageBtn dark={dark} disabled={page === 1} onClick={() => setPage(page - 1)}>← Prev</PageBtn>{Array.from({ length: totalPages }, (_, i) => i + 1).slice(Math.max(0, page - 3), Math.max(0, page - 3) + 5).map((p: number) => <button key={p} onClick={() => setPage(p)} className={`h-7 w-7 rounded-md font-medium transition-colors ${p === page ? "bg-indigo-500 text-white" : dark ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}>{p}</button>)}<PageBtn dark={dark} disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next →</PageBtn></div></div>
+    <div className={`flex items-center justify-between px-4 py-3 text-xs border-t ${dark ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-500"}`}><span>Showing {Math.min((page - 1) * perPage + 1, sorted.length)}–{Math.min(page * perPage, sorted.length)} of {sorted.length}</span><div className="flex items-center gap-1"><PageBtn dark={dark} disabled={page === 1} onClick={() => setPage(page - 1)}>← Prev</PageBtn>{Array.from({ length: totalPages }, (_, i) => i + 1).slice(Math.max(0, page - 3), Math.max(0, page - 3) + 5).map((p: number) => <button key={p} onClick={() => setPage(p)} className={`h-7 w-7 rounded-md font-medium transition-colors ${p === page ? "bg-amber-500 text-slate-950 font-bold" : dark ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}>{p}</button>)}<PageBtn dark={dark} disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next →</PageBtn></div></div>
   </section>;
 }
 
-function Select({ dark, value, onChange, options, label }: any) { return <div className="relative"><select value={value} onChange={(e: any) => onChange(e.target.value)} className={`appearance-none pl-3 pr-8 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-900/60 border border-slate-800 text-slate-100 focus:border-indigo-500" : "bg-white border border-slate-200 text-slate-900 focus:border-indigo-500"}`}>{options.map((o: string) => <option key={o} value={o}>{label}: {o}</option>)}</select><svg viewBox="0 0 24 24" className={`absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none ${dark ? "text-slate-500" : "text-slate-400"}`} fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" /></svg></div>; }
+function Select({ dark, value, onChange, options, label }: any) { return <div className="relative"><select value={value} onChange={(e: any) => onChange(e.target.value)} className={`appearance-none pl-3 pr-8 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-900/60 border border-slate-800 text-slate-100 focus:border-amber-500" : "bg-white border border-slate-200 text-slate-900 focus:border-amber-500"}`}>{options.map((o: string) => <option key={o} value={o}>{label}: {o}</option>)}</select><svg viewBox="0 0 24 24" className={`absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none ${dark ? "text-slate-500" : "text-slate-400"}`} fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" /></svg></div>; }
 function KpiCard({ dark, label, value, suffix, color, icon }: any) { return <div className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${dark ? "bg-slate-900/70 border-slate-800 hover:border-slate-700" : "bg-white border-slate-200/70 hover:border-slate-300 shadow-sm"}`}><div className="pointer-events-none absolute -top-10 -right-10 h-28 w-28 rounded-full blur-2xl opacity-20" style={{ background: color }} /><div className="relative flex items-start justify-between gap-3 p-5"><div className="min-w-0"><p className={`text-[11px] font-bold uppercase tracking-[0.14em] ${dark ? "text-slate-500" : "text-slate-400"}`}>{label}</p><div className="mt-2 flex items-baseline gap-1.5"><span className="text-[28px] font-extrabold tracking-tight leading-none">{value}</span>{suffix && <span className={`text-sm font-semibold ${dark ? "text-slate-500" : "text-slate-400"}`}>{suffix}</span>}</div></div><div className="h-11 w-11 flex-shrink-0 rounded-xl flex items-center justify-center ring-1 ring-inset transition-all group-hover:scale-105 [&>svg]:h-5 [&>svg]:w-5" style={{ background: `linear-gradient(135deg, ${color}2a, ${color}0d)`, color, boxShadow: `0 6px 16px -8px ${color}66, inset 0 0 0 1px ${color}38` }}>{icon}</div></div></div>; }
 function Card({ dark, title, subtitle, children, className = "" }: any) { return <div className={`rounded-2xl border p-5 transition-all duration-300 hover:shadow-xl ${dark ? "bg-slate-900/70 border-slate-800 hover:border-slate-700" : "bg-white border-slate-200/70 hover:border-slate-300 shadow-sm"} ${className}`}><div className="mb-3"><h3 className="font-bold text-sm">{title}</h3>{subtitle && <p className={`text-xs mt-0.5 ${dark ? "text-slate-400" : "text-slate-500"}`}>{subtitle}</p>}</div>{children}</div>; }
-function Th({ dark, children, sortKey, active, dir, onClick, align = "left" }: any) { const a = active === sortKey; return <th className={`px-4 py-3 font-medium select-none ${align === "right" ? "text-right" : "text-left"}`}><button onClick={() => onClick(sortKey)} className={`inline-flex items-center gap-1 transition-colors ${a ? (dark ? "text-indigo-300" : "text-indigo-600") : (dark ? "hover:text-slate-200" : "hover:text-slate-900")}`}>{children}<span className="text-[10px] opacity-60">{a ? (dir === "asc" ? "▲" : "▼") : "↕"}</span></button></th>; }
+function Th({ dark, children, sortKey, active, dir, onClick, align = "left" }: any) { const a = active === sortKey; return <th className={`px-4 py-3 font-medium select-none ${align === "right" ? "text-right" : "text-left"}`}><button onClick={() => onClick(sortKey)} className={`inline-flex items-center gap-1 transition-colors ${a ? (dark ? "text-amber-300" : "text-amber-600") : (dark ? "hover:text-slate-200" : "hover:text-slate-900")}`}>{children}<span className="text-[10px] opacity-60">{a ? (dir === "asc" ? "▲" : "▼") : "↕"}</span></button></th>; }
 function PageBtn({ dark, disabled, onClick, children }: any) { return <button disabled={disabled} onClick={onClick} className={`px-2 h-7 rounded-md font-medium transition-colors ${disabled ? "opacity-40 cursor-not-allowed" : dark ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}>{children}</button>; }
 function WelcomeHero({ dark, userRole }: any) { const h = new Date().getHours(); const g = h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : h < 21 ? "Good Evening" : "Good Night"; const n = userRole === "recruiter" ? "Recruiter" : "Manager"; return <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">{g} {n}!</h2><p className={`text-xs mt-1 ${dark ? "text-slate-500" : "text-slate-400"}`}>Dashboard · {userRole === "recruiter" ? "Recruitment Operations" : "Hiring Overview"}</p></div><div className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-semibold border ${dark ? "bg-slate-900/70 border-slate-800 text-slate-300" : "bg-white border-slate-200 text-slate-600 shadow-sm"}`}><svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" /></svg>{new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" })}</div></div>; }
-function LogoutModal({ dark, onClose, onLogout, onSwitch }: any) { return <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} /><div className={`relative w-full max-w-md rounded-2xl border shadow-2xl p-6 animate-fadeIn ${dark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"}`}><div className="flex items-center justify-between mb-4"><h3 className="text-base font-bold">Manage Session</h3><button onClick={onClose} className={`p-1.5 rounded-lg ${dark ? "hover:bg-slate-800 text-slate-400" : "hover:bg-slate-100 text-slate-500"}`}><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button></div><div className={`p-3.5 rounded-xl border mb-5 flex items-center gap-3 ${dark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"}`}><div className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-violet-500 to-pink-500`}>HM</div><div><p className="text-xs font-semibold">Active Session: Hiring Manager</p><p className={`text-[11px] ${dark ? "text-slate-400" : "text-slate-500"}`}>recruitment@company.co</p></div></div><div className="space-y-2.5"><button onClick={() => { onSwitch(); onClose(); }} className={`w-full flex items-center justify-between p-3 rounded-xl border text-left text-xs font-semibold ${dark ? "bg-indigo-500/15 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/25" : "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"}`}><div className="flex items-center gap-2.5"><div className="h-7 w-7 rounded-lg bg-indigo-500 text-white flex items-center justify-center font-bold text-[10px]">RC</div><div><span>Switch to Recruiter Operations Portal</span><p className={`text-[10px] font-normal ${dark ? "text-slate-400" : "text-slate-500"}`}>Instant view workspace switch</p></div></div><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg></button><button onClick={onLogout} className={`w-full flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-semibold ${dark ? "bg-rose-500/15 border-rose-500/30 text-rose-300 hover:bg-rose-500/25" : "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100"}`}><svg viewBox="0 0 24 24" className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" /></svg>Log Out Active Session</button></div></div></div>; }

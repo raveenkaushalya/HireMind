@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "8or5AMcB+Fo=",
+  "dgSpecHash": "UEmdGEYYafw=",
   "success": true,
-  "projectFilePath": "C:\\Users\\VICTUS\\Downloads\\src\\RecruitmentPlatform.API.csproj",
+  "projectFilePath": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\RecruitmentPlatform.API.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\VICTUS\\.nuget\\packages\\bcrypt.net-next\\4.2.0\\bcrypt.net-next.4.2.0.nupkg.sha512",
     "C:\\Users\\VICTUS\\.nuget\\packages\\bouncycastle.cryptography\\2.6.2\\bouncycastle.cryptography.2.6.2.nupkg.sha512",

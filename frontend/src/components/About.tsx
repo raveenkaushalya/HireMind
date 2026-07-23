@@ -1,32 +1,10 @@
 import { useTheme } from '../context/ThemeContext';
-import { CheckCircle2, Target, Heart, Globe, TrendingUp } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
-const values = [
-  {
-    icon: Target,
-    title: 'Precision Matching',
-    description: 'We obsess over accuracy so the right talent meets the right opportunity.',
-  },
-  {
-    icon: Heart,
-    title: 'Fair & Inclusive',
-    description: 'Bias-aware AI that gives every candidate an equal shot at success.',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Always Evolving',
-    description: 'Our models learn from millions of placements to get smarter every day.',
-  },
-  {
-    icon: Globe,
-    title: 'Global Reach',
-    description: 'Connecting talent and companies across 60+ countries worldwide.',
-  },
-];
 
 const highlights = [
-  'Trained on 500M+ resumes and job descriptions',
-  'SOC 2 Type II & GDPR compliant',
+  'Trained on 10K+ resumes and job descriptions',
+  'Trusted by 800+ companies worldwide',
   'Real-time market intelligence built-in',
   'Dedicated success team for every account',
 ];
@@ -68,7 +46,7 @@ export default function About() {
                 : 'bg-primary-50 border border-primary-200'
             }`}>
               <span className={`text-sm font-semibold ${isDark ? 'text-primary-300' : 'text-primary-600'}`}>
-                About HireMinds.
+                About Us
               </span>
             </div>
 
@@ -82,7 +60,7 @@ export default function About() {
             </h2>
 
             <p className={`text-lg leading-relaxed mb-4 ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
-              HireMinds. was born from a simple belief: finding the perfect job or candidate shouldn't take months of guesswork. We combine cutting-edge AI with human expertise to make hiring faster, fairer, and more accurate.
+              HireMinds. was born from a simple belief. Finding the perfect job or candidate shouldn't take months of guesswork. We combine cutting-edge AI with human expertise to make hiring faster, fairer, and more accurate.
             </p>
             <p className={`text-base leading-relaxed mb-8 ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
               Today, our platform powers recruitment for startups and Fortune 500 companies alike, processing millions of matches every single day.
@@ -100,32 +78,6 @@ export default function About() {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Values Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 lg:mt-16">
-          {values.map(value => (
-            <div
-              key={value.title}
-              className={`rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 ${
-                isDark
-                  ? 'bg-surface-800/50 border border-surface-700/50 hover:border-surface-600'
-                  : 'bg-white border border-surface-200 hover:shadow-xl hover:shadow-surface-200/50'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                isDark ? 'bg-primary-500/10' : 'bg-primary-50'
-              }`}>
-                <value.icon className="w-6 h-6 text-primary-500" />
-              </div>
-              <h3 className={`font-display font-bold text-base mb-2 ${isDark ? 'text-white' : 'text-surface-900'}`}>
-                {value.title}
-              </h3>
-              <p className={`text-sm leading-relaxed ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>
-                {value.description}
-              </p>
-            </div>
-          ))}
         </div>
       </div>
     </section>

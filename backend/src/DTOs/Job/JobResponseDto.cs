@@ -6,6 +6,7 @@ namespace RecruitmentPlatform.API.DTOs.Job
         public int CompanyId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty;
+        public string Category { get; set; } = "Engineering";
         public string Location { get; set; } = string.Empty;
         public string SalaryRange { get; set; } = string.Empty;
         public int Applicants { get; set; }
@@ -17,6 +18,7 @@ namespace RecruitmentPlatform.API.DTOs.Job
         public string Responsibilities { get; set; } = string.Empty;
         public string Requirements { get; set; } = string.Empty;
         public string DescriptionAboutTheCompany { get; set; } = string.Empty;
+        public string? MinQualification { get; set; }
         public string Status { get; set; } = "Open";
         public string? CompanyName { get; set; }
     }

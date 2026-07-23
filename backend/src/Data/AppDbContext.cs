@@ -99,6 +99,7 @@ namespace RecruitmentPlatform.API.Data
             modelBuilder.Entity<JobPosting>().Property(j => j.CompanyId).HasColumnName("CompanyID");
             modelBuilder.Entity<JobPosting>().Property(j => j.Title).HasColumnName("job_title");
             modelBuilder.Entity<JobPosting>().Property(j => j.Type).HasColumnName("type");
+            modelBuilder.Entity<JobPosting>().Property(j => j.Category).HasColumnName("category");
             modelBuilder.Entity<JobPosting>().Property(j => j.Location).HasColumnName("location");
             modelBuilder.Entity<JobPosting>().Property(j => j.SalaryRange).HasColumnName("salary_range");
             modelBuilder.Entity<JobPosting>().Property(j => j.Applicants).HasColumnName("applicants");

@@ -9,7 +9,15 @@ export default function CompanySetupPassword() {
     const { openLogin } = useAuth();
 
     const searchParams = new window.URLSearchParams(window.location.search);
-    const token = searchParams.get('companySetupToken');
+    const companyToken = searchParams.get('companySetupToken');
+    const recruiterToken = searchParams.get('recruiterSetupToken');
+    const hiringManagerToken = searchParams.get('hiringManagerSetupToken');
+
+    const token = companyToken || recruiterToken || hiringManagerToken;
+    const isRecruiter = !!recruiterToken;
+    const isHiringManager = !!hiringManagerToken;
+
+    const accountType = isHiringManager ? 'Hiring Manager' : isRecruiter ? 'Recruiter' : 'Company';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,7 +34,11 @@ export default function CompanySetupPassword() {
             setIsLoading(true);
             setError('');
 
-            const res = await fetch('/api/auth/company-setup-password', {
+            const endpoint = isHiringManager ? '/api/auth/hiring-manager-setup-password' :
+                isRecruiter ? '/api/auth/recruiter-setup-password' :
+                    '/api/auth/company-setup-password';
+
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, password }),
@@ -53,9 +65,9 @@ export default function CompanySetupPassword() {
         <div className="min-h-screen grid items-center bg-gray-900 justify-center text-white py-12 px-4 sm:px-6 lg:px-8">
             <div className="w-full max-w-md space-y-8 bg-gray-800 p-8 rounded-xl shadow-xl">
                 <div className="text-center">
-                    <h2 className="text-3xl font-extrabold text-white">Setup Company Account</h2>
+                    <h2 className="text-3xl font-extrabold text-white">Setup {accountType} Account</h2>
                     <p className="mt-2 text-sm text-gray-400">
-                        Please create a password for your company account.
+                        Please create a password for your {accountType.toLowerCase()} account.
                     </p>
                 </div>
 

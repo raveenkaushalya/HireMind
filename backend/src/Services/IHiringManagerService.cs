@@ -6,6 +6,7 @@ namespace RecruitmentPlatform.API.Services
     {
         Task<IEnumerable<HiringManagerResponseDto>> GetAllAsync();
         Task<HiringManagerResponseDto?> GetByIdAsync(int id);
+        Task<HiringManagerResponseDto?> GetByUserIdAsync(int userId);
         Task<IEnumerable<HiringManagerResponseDto>> GetByCompanyIdAsync(int companyId);
         Task<HiringManagerResponseDto> CreateAsync(HiringManagerRequestDto dto);
         Task<HiringManagerResponseDto?> UpdateAsync(int id, HiringManagerRequestDto dto);

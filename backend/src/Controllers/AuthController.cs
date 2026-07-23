@@ -56,6 +56,20 @@ namespace RecruitmentPlatform.API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpPost("hiring-manager-setup-password")]
+        public async Task<IActionResult> HiringManagerSetupPassword([FromBody] CompanySetupPasswordRequest dto)
+        {
+            try
+            {
+                var result = await _authService.CreateHiringManagerAccountAsync(dto.Token, dto.Password);
+                return Ok(new { message = "Account created successfully", result.Token, result.Role, name = result.Name, result.UserId, result.Email });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 
     public class CompanySetupPasswordRequest

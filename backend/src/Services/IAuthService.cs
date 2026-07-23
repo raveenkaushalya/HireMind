@@ -8,5 +8,6 @@ namespace RecruitmentPlatform.API.Services
         Task<AuthResponseDto> LoginAsync(LoginRequestDto dto);
         Task<AuthResponseDto> CreateCompanyAccountAsync(string token, string password);
         Task<AuthResponseDto> CreateRecruiterAccountAsync(string token, string password);
+        Task<AuthResponseDto> CreateHiringManagerAccountAsync(string token, string password);
     }
 }

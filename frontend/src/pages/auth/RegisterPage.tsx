@@ -7,6 +7,7 @@ import {
   Sparkles, CheckCircle2, ChevronRight, Link2, X, Upload, FileText,
   ShieldCheck, PartyPopper, Search,
 } from 'lucide-react';
+import { uploadCompanyProofToSupabase } from '../../utils/storageService';
 
 type Role = '' | 'candidate' | 'company';
 
@@ -272,6 +273,11 @@ export default function RegisterPage() {
         setShowCandidateSuccess(true);
 
       } else if (form.role === 'company') {
+        let proofUrl = '';
+        if (form.proofDocument) {
+          proofUrl = await uploadCompanyProofToSupabase(form.proofDocument);
+        }
+
         const companyPayload = {
           name: form.companyName,
           industry: form.companyIndustry,
@@ -282,6 +288,7 @@ export default function RegisterPage() {
           description: form.companyDescription,
           contactPersonName: form.contactPersonName,
           contactPersonNumber: form.contactPersonPhone,
+          proofDocumentsMetadataLink: proofUrl,
         };
 
         const compRes = await fetch('/api/companies/register', {

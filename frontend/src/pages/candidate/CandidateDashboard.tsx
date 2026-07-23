@@ -6,7 +6,8 @@ import {
   FileText, Upload, X, Sparkles, CheckCircle2, AlertCircle,
   Link2, Edit3, Save, ChevronRight, Brain, BarChart3, Target,
   Zap, BookOpen, LayoutDashboard, Clock, Eye, XCircle,
-  CalendarDays, Building2, ExternalLink, RefreshCw, FileText as FileTextIcon
+  CalendarDays, Building2, ExternalLink, RefreshCw, FileText as FileTextIcon,
+  LogOut
 } from 'lucide-react';
 import { uploadResumeToSupabase } from '../../utils/storageService';
 
@@ -20,8 +21,6 @@ interface ParsedResume {
   languages: string[];
   overallScore: number;
 }
-
-// (mockParsedResume removed)
 
 // ── Skill Bar ─────────────────────────────────────────────────────────
 function SkillBar({ name, level, isDark }: { name: string; level: number; isDark: boolean }) {
@@ -78,22 +77,19 @@ interface AppliedJob {
   feedback: RecruiterFeedback[];
 }
 
-// Removing static appliedJobs array
-// const appliedJobs: AppliedJob[] = [];// ════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════
 export default function CandidateDashboard() {
   const { theme } = useTheme();
-  const { username, signOut, goHome, openJobs, userId, token } = useAuth();
+  const { username, signOut, goHome, userId, token } = useAuth();
   const isDark = theme === 'dark';
 
   const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'resume' | 'applications'>('overview');
   const [editing, setEditing] = useState(false);
-  const [selectedApp, setSelectedApp] = useState<AppliedJob | null>(null);
   const [resumeFile, setResumeFile] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const [candidateProfile, setCandidateProfile] = useState<any>(null);
   const [candidateApplications, setCandidateApplications] = useState<any[]>([]);
-  const [loadingDb, setLoadingDb] = useState(true);
 
   const [parsed, setParsed] = useState<ParsedResume | null>(null);
   const [isUpdatingResume, setIsUpdatingResume] = useState(false);
@@ -104,13 +100,13 @@ export default function CandidateDashboard() {
     return candidateApplications.map(app => ({
       id: app.id as number,
       title: (app.jobTitle || 'Unknown Job') as string,
-      company: 'Tech Company' as string, // API doesn't return company easily here
+      company: 'Tech Company' as string,
       logo: '💼' as string,
       location: 'Remote' as string,
       salary: 'Competitive' as string,
       appliedDate: new Date(app.dateSubmitted).toLocaleDateString() as string,
       status: (app.status || 'Applied') as ApplicationStatus,
-      aiScore: parsed?.overallScore || Math.floor(Math.random() * 20 + 75), // Uses profile score or random
+      aiScore: parsed?.overallScore || Math.floor(Math.random() * 20 + 75),
       type: 'Full-time' as string,
       lastUpdate: new Date().toLocaleDateString() as string,
       note: '' as string,
@@ -121,14 +117,9 @@ export default function CandidateDashboard() {
 
   // Fetch candidate profile and applications
   useEffect(() => {
-    async function fetchData() {
-      if (!userId || !token) {
-        setLoadingDb(false);
-        return;
-      }
+    const fetchData = async () => {
+      if (!userId || !token) return;
       try {
-        setLoadingDb(true);
-        // 1. Fetch profile
         const profRes = await fetch(`/api/candidates/by-user/${userId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -150,7 +141,6 @@ export default function CandidateDashboard() {
       } catch (err) {
         console.error('Failed to fetch dashboard data', err);
       } finally {
-        setLoadingDb(false);
       }
     }
     fetchData();
@@ -251,12 +241,18 @@ export default function CandidateDashboard() {
     }
   };
 
-  const handleParse = async () => {
-    if (!uploadedFile) return;
+  const handleParse = async (isUrl: boolean = false) => {
+    if (!isUrl && !uploadedFile) return;
+    if (isUrl && !candidateProfile?.resumeUrl) return;
+
     setParsing(true);
     try {
       const formData = new FormData();
-      formData.append('file', uploadedFile);
+      if (!isUrl && uploadedFile) {
+        formData.append('file', uploadedFile);
+      } else if (isUrl && candidateProfile?.resumeUrl) {
+        formData.append('resumeUrl', candidateProfile.resumeUrl);
+      }
       formData.append('jobDescription', profile.title || 'Professional');
 
       const res = await fetch('/api/portal/candidate/analyze', {
@@ -279,7 +275,6 @@ export default function CandidateDashboard() {
           languages: candProf.languages || [],
           overallScore: data.overallScore || 0,
         };
-        // append missing skills to the extracted ones with lower confidence
         if (data.missingSkills && Array.isArray(data.missingSkills)) {
           data.missingSkills.forEach((s: string) => newParsed.skills.push({ name: s, level: 30 }));
         }
@@ -296,6 +291,28 @@ export default function CandidateDashboard() {
       setParsed(null);
     } finally {
       setParsing(false);
+    }
+  };
+
+  const handleDeleteResume = async () => {
+    if (!confirm("Are you sure you want to delete your resume?")) return;
+    try {
+      const res = await fetch(`/api/candidates/${candidateProfile.id}/resume`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ resumeUrl: null })
+      });
+      if (res.ok) {
+        setCandidateProfile({ ...candidateProfile, resumeUrl: null });
+        setParsed(null);
+      } else {
+        alert('Failed to delete resume.');
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -316,6 +333,7 @@ export default function CandidateDashboard() {
         education: profile.education,
         skills: profile.skills.join(', '),
         linkedinUrl: profile.linkedin,
+        resumeUrl: candidateProfile?.resumeUrl,
         bio: profile.bio,
         userId: userId
       };
@@ -393,10 +411,26 @@ export default function CandidateDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-bold shadow-md shadow-primary-500/20">
-              {username.charAt(0).toUpperCase()}
+          <div className="flex items-center gap-3">
+            {/* Styled Profile Icon */}
+            <div className="group relative w-10 h-10 rounded-full bg-gradient-to-tr from-primary-600 via-primary-500 to-amber-500 p-[2px] shadow-md transition-all duration-300 hover:scale-105 cursor-pointer">
+              <div className={`w-full h-full rounded-full flex items-center justify-center font-bold text-sm transition-colors ${isDark ? 'bg-[#0a0e2a] text-white' : 'bg-white text-primary-600'
+                }`}>
+                {username ? username.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+              </div>
             </div>
+
+            {/* Logout Icon Button */}
+            <button
+              onClick={signOut}
+              title="Log Out"
+              className={`p-2.5 rounded-xl border transition-all duration-200 cursor-pointer ${isDark
+                ? 'bg-surface-800/80 border-surface-700 text-red-400 hover:bg-red-500/10 hover:border-red-500/30'
+                : 'bg-white border-surface-200 text-red-500 hover:bg-red-50 hover:border-red-200 shadow-sm'
+                }`}
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -600,8 +634,14 @@ export default function CandidateDashboard() {
                 <h3 className={`font-display font-bold text-sm mb-4 ${isDark ? 'text-white' : 'text-surface-900'}`}>Profile Strength</h3>
                 <div className="space-y-3">
                   {[
-                    { label: 'Profile completeness', value: 85, icon: Target },
-                    { label: 'AI match readiness', value: 92, icon: Brain },
+                    {
+                      label: 'Profile completeness', value: (() => {
+                        const fields = ['name', 'email', 'phoneNumber', 'location', 'currentJobTitle', 'experienceLevel', 'education', 'skills', 'linkedinUrl', 'resumeUrl', 'bio'];
+                        const filled = fields.filter(f => candidateProfile && candidateProfile[f] && typeof candidateProfile[f] === 'string' && candidateProfile[f].trim() !== '').length;
+                        return Math.round((filled / fields.length) * 100);
+                      })(), icon: Target
+                    },
+                    { label: 'AI match readiness', value: parsed ? 100 : (candidateProfile?.resumeUrl ? 80 : 20), icon: Brain },
                     { label: 'Resume score', value: parsed ? parsed.overallScore : 0, icon: BarChart3 },
                   ].map(stat => (
                     <div key={stat.label}>
@@ -618,17 +658,6 @@ export default function CandidateDashboard() {
                         <div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-accent-500 transition-all duration-700" style={{ width: `${stat.value}%` }} />
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Skills */}
-              <div className={cardCls}>
-                <h3 className={`font-display font-bold text-sm mb-3 ${isDark ? 'text-white' : 'text-surface-900'}`}>Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {profile.skills.map(s => (
-                    <span key={s} className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${isDark ? 'bg-primary-500/15 text-primary-300 border border-primary-500/20' : 'bg-primary-50 text-primary-600 border border-primary-200'
-                      }`}>{s}</span>
                   ))}
                 </div>
               </div>
@@ -735,6 +764,19 @@ export default function CandidateDashboard() {
                       <p className={`text-sm leading-relaxed ${isDark ? 'text-surface-300' : 'text-surface-600'}`}>{profile.bio}</p>
                     )}
                   </div>
+                  <div>
+                    <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-surface-400' : 'text-surface-500'}`}>Skills (comma separated)</label>
+                    {editing ? (
+                      <input value={profile.skills.join(', ')} onChange={e => setField('skills', e.target.value.split(',').map(s => s.trim()))} className={inputCls} />
+                    ) : (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {profile.skills.map(s => (
+                          <span key={s} className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${isDark ? 'bg-primary-500/15 text-primary-300 border border-primary-500/20' : 'bg-primary-50 text-primary-600 border border-primary-200'
+                            }`}>{s}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -770,13 +812,34 @@ export default function CandidateDashboard() {
                       </a>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setIsUpdatingResume(true)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all cursor-pointer ${isDark ? 'bg-surface-700 border border-surface-600 text-surface-200 hover:bg-surface-600' : 'bg-white border border-surface-200 text-surface-700 hover:bg-surface-50'}`}
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    Update Resume
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => handleParse(true)}
+                      disabled={parsing}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all cursor-pointer bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:shadow-primary-500/40 disabled:opacity-60`}
+                    >
+                      {parsing ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4" />
+                      )}
+                      {parsing ? 'Parsing...' : 'Parse with AI'}
+                    </button>
+                    <button
+                      onClick={() => setIsUpdatingResume(true)}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all cursor-pointer ${isDark ? 'bg-surface-700 border border-surface-600 text-surface-200 hover:bg-surface-600' : 'bg-white border border-surface-200 text-surface-700 hover:bg-surface-50'}`}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Update
+                    </button>
+                    <button
+                      onClick={handleDeleteResume}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all cursor-pointer ${isDark ? 'bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20' : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-100'}`}
+                    >
+                      <X className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ) : (
                 !resumeFile ? (
@@ -819,7 +882,7 @@ export default function CandidateDashboard() {
                           {isSavingResume ? 'Saving...' : 'Save'}
                         </button>
                         {!parsed && (
-                          <button onClick={handleParse} disabled={parsing}
+                          <button onClick={() => handleParse(false)} disabled={parsing}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-semibold shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all cursor-pointer disabled:opacity-60">
                             {parsing ? (
                               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -35,9 +35,6 @@ namespace RecruitmentPlatform.API.Migrations
                         .HasColumnType("int")
                         .HasColumnName("candidateID");
 
-                    b.Property<int?>("CandidateId1")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("DateSubmitted")
                         .HasColumnType("datetime2")
                         .HasColumnName("Date_Submitted");
@@ -54,8 +51,6 @@ namespace RecruitmentPlatform.API.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CandidateId");
-
-                    b.HasIndex("CandidateId1");
 
                     b.HasIndex("JobPostingId");
 
@@ -131,10 +126,6 @@ namespace RecruitmentPlatform.API.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("current_job_title");
 
-                    b.Property<string>("CvMetadataLink")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("CV_metadata_link");
-
                     b.Property<string>("Education")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("education");
@@ -172,6 +163,10 @@ namespace RecruitmentPlatform.API.Migrations
                     b.Property<int?>("RecruiterId")
                         .HasColumnType("int")
                         .HasColumnName("RecruiterID");
+
+                    b.Property<string>("ResumeUrl")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ResumeUrl");
 
                     b.Property<string>("Skills")
                         .HasColumnType("nvarchar(max)")
@@ -301,6 +296,16 @@ namespace RecruitmentPlatform.API.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("password_hashed");
 
+                    b.Property<string>("RegistrationToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("TokenExpiry")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("UserId")
                         .HasColumnType("int")
                         .HasColumnName("userID");
@@ -327,6 +332,11 @@ namespace RecruitmentPlatform.API.Migrations
                         .HasColumnType("int")
                         .HasColumnName("applicants");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("category");
+
                     b.Property<DateTime?>("ClosingDate")
                         .HasColumnType("datetime2")
                         .HasColumnName("closing_date");
@@ -349,6 +359,10 @@ namespace RecruitmentPlatform.API.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("location");
+
+                    b.Property<string>("MinQualification")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("PostedDate")
                         .HasColumnType("datetime2")
@@ -427,10 +441,18 @@ namespace RecruitmentPlatform.API.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("password_hashed");
 
+                    b.Property<string>("RegistrationToken")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("RegistrationToken");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("status");
+
+                    b.Property<DateTime?>("TokenExpiry")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("TokenExpiry");
 
                     b.Property<int?>("UserId")
                         .HasColumnType("int")
@@ -558,15 +580,11 @@ namespace RecruitmentPlatform.API.Migrations
 
             modelBuilder.Entity("RecruitmentPlatform.API.Models.Application", b =>
                 {
-                    b.HasOne("RecruitmentPlatform.API.Models.Candidate", null)
+                    b.HasOne("RecruitmentPlatform.API.Models.Candidate", "Candidate")
                         .WithMany()
                         .HasForeignKey("CandidateId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("RecruitmentPlatform.API.Models.Candidate", "Candidate")
-                        .WithMany()
-                        .HasForeignKey("CandidateId1");
 
                     b.HasOne("RecruitmentPlatform.API.Models.JobPosting", "JobPosting")
                         .WithMany()

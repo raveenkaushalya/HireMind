@@ -34,7 +34,8 @@ namespace RecruitmentPlatform.API.Services
             {
                 Title = dto.Title,
                 DescriptionAboutTheRole = dto.Description,
-                SkillsNeeded = dto.RequiredSkills,
+                Category = dto.Category,
+                SkillsNeeded = dto.SkillsNeeded,
                 Location = dto.Location,
                 SalaryRange = dto.SalaryRange,
                 Type = dto.Type,
@@ -44,7 +45,8 @@ namespace RecruitmentPlatform.API.Services
                 DescriptionAboutTheCompany = dto.DescriptionAboutTheCompany ?? string.Empty,
                 Responsibilities = dto.Responsibilities ?? string.Empty,
                 Requirements = dto.Requirements ?? string.Empty,
-                Status = "Open",
+                MinQualification = dto.MinQualification ?? string.Empty,
+                Status = dto.Status ?? "Open",
                 PostedDate = DateTime.UtcNow
             };
 
@@ -59,7 +61,8 @@ namespace RecruitmentPlatform.API.Services
 
             job.Title = dto.Title;
             job.DescriptionAboutTheRole = dto.Description;
-            job.SkillsNeeded = dto.RequiredSkills;
+            job.Category = dto.Category;
+            job.SkillsNeeded = dto.SkillsNeeded;
             job.Location = dto.Location;
             job.SalaryRange = dto.SalaryRange;
             job.Type = dto.Type;
@@ -69,6 +72,8 @@ namespace RecruitmentPlatform.API.Services
             job.DescriptionAboutTheCompany = dto.DescriptionAboutTheCompany ?? job.DescriptionAboutTheCompany;
             job.Responsibilities = dto.Responsibilities ?? job.Responsibilities;
             job.Requirements = dto.Requirements ?? job.Requirements;
+            job.MinQualification = dto.MinQualification ?? job.MinQualification;
+            job.Status = dto.Status ?? job.Status;
 
             await _repo.UpdateAsync(job);
             return MapToDto(job);
@@ -84,12 +89,23 @@ namespace RecruitmentPlatform.API.Services
             return true;
         }
 
+        public async Task<bool> ChangeStatusAsync(int id, string status)
+        {
+            var job = await _repo.GetByIdAsync(id);
+            if (job == null) return false;
+
+            job.Status = status;
+            await _repo.UpdateAsync(job);
+            return true;
+        }
+
         private static JobResponseDto MapToDto(JobPosting j) => new()
         {
             Id = j.Id,
             CompanyId = j.CompanyId,
             Title = j.Title,
             Type = j.Type,
+            Category = j.Category,
             Location = j.Location,
             SalaryRange = j.SalaryRange,
             Applicants = j.Applicants,
@@ -100,6 +116,7 @@ namespace RecruitmentPlatform.API.Services
             DescriptionAboutTheRole = j.DescriptionAboutTheRole,
             Responsibilities = j.Responsibilities,
             Requirements = j.Requirements,
+            MinQualification = j.MinQualification,
             DescriptionAboutTheCompany = j.DescriptionAboutTheCompany,
             Status = j.Status,
             CompanyName = j.Company?.Name

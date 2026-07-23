@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Candidate, Stage } from "../data";
+import type { Candidate, Stage } from "../../../data";
 import { ScheduleInterviewModal } from "./ScheduleInterviewModal";
 
 interface Props {
@@ -15,7 +15,6 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-// Deterministic file size / page count from candidate id
 function cvMeta(id: string) {
   const n = parseInt(id.replace("CND-", ""), 10);
   const sizes = ["284 KB", "312 KB", "198 KB", "467 KB", "356 KB", "221 KB", "389 KB", "244 KB"];
@@ -36,7 +35,6 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
   const [cvPreviewOpen, setCvPreviewOpen] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
-  // Close on Escape key
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -61,10 +59,8 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
 
   return (
     <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-0 sm:p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Panel */}
       <div
         className={`relative w-full sm:max-w-3xl max-h-full sm:max-h-[90vh] overflow-y-auto sm:rounded-2xl border shadow-2xl animate-fadeIn ${
           dark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
@@ -102,7 +98,6 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
 
         {/* Body */}
         <div className="p-5 space-y-6">
-          {/* Action banner */}
           {actionState !== "none" && (
             <div
               className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium ${
@@ -203,7 +198,7 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
           {/* CV File */}
           <CvFileSection dark={dark} candidate={c} cvPreviewOpen={cvPreviewOpen} setCvPreviewOpen={setCvPreviewOpen} />
 
-          {/* Recruiter Assessment & Sourcing Log (for Recruiter role) */}
+          {/* Recruiter Assessment */}
           {userRole === "recruiter" && (
             <div className={`p-4 rounded-xl border ${dark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
               <div className="flex items-center justify-between mb-2">
@@ -248,7 +243,7 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
               <div className="space-y-3">
                 {c.interviewHistory.map((ev, i) => (
                   <div key={i} className={`flex gap-3 rounded-xl border px-3 py-3 ${dark ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-50"}`}>
-                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${dark ? "bg-slate-800 text-indigo-300" : "bg-indigo-50 text-indigo-600"}`}>
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${dark ? "bg-slate-800 text-amber-400" : "bg-amber-50 text-amber-700"}`}>
                       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4z" />
                       </svg>
@@ -280,8 +275,8 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
         <div className={`sticky bottom-0 flex flex-col gap-2.5 p-5 border-t backdrop-blur-md ${dark ? "bg-slate-900/95 border-slate-800" : "bg-white/95 border-slate-200"}`}>
           {userRole === "recruiter" ? (
             <>
-              {/* Recruiter Top Row: Submit to HM + Send Assessment */}
               <div className="flex flex-col sm:flex-row gap-2.5">
+                {/* Positive Action -> Emerald */}
                 <button
                   onClick={() => setActionState("submitted_to_hm")}
                   disabled={actionState !== "none"}
@@ -312,6 +307,7 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
                   </svg>
                   Send Assessment
                 </button>
+                {/* Destructive Action -> Rose */}
                 <button
                   onClick={() => setActionState("rejected")}
                   disabled={actionState !== "none"}
@@ -327,13 +323,13 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
                 </button>
               </div>
 
-              {/* Recruiter Bottom Row: Schedule Screen */}
+              {/* Main CTA -> Gold Action Accent */}
               <button
                 onClick={() => setShowScheduleModal(true)}
                 disabled={actionState !== "none"}
                 className={`mx-auto w-full max-w-xs sm:max-w-md inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                   actionState !== "none" ? "opacity-50 cursor-not-allowed" : ""
-                } bg-indigo-500 text-white hover:bg-indigo-600`}
+                } bg-amber-500 text-slate-950 hover:bg-amber-600`}
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -344,17 +340,15 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
             </>
           ) : (
             <>
-              {/* Hiring Manager Top Row: Approve + Reject */}
               <div className="flex flex-col sm:flex-row gap-2.5">
+                {/* Positive Action -> Emerald */}
                 <button
                   onClick={() => setActionState("approved")}
                   disabled={actionState !== "none"}
                   className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                     actionState !== "none"
                       ? "opacity-50 cursor-not-allowed"
-                      : dark
-                      ? "bg-slate-500/15 text-slate-300 hover:bg-slate-500/25 ring-1 ring-inset ring-slate-500/30"
-                      : "bg-slate-50 text-slate-700 hover:bg-slate-100 ring-1 ring-inset ring-slate-200"
+                      : "bg-emerald-500 text-white hover:bg-emerald-600"
                   }`}
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -362,6 +356,7 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
                   </svg>
                   Approve
                 </button>
+                {/* Destructive Action -> Rose */}
                 <button
                   onClick={() => setActionState("rejected")}
                   disabled={actionState !== "none"}
@@ -380,13 +375,13 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
                 </button>
               </div>
 
-              {/* Bottom row: Schedule an Interview */}
+              {/* Main CTA -> Gold Action Accent */}
               <button
                 onClick={() => setShowScheduleModal(true)}
                 disabled={actionState !== "none"}
                 className={`mx-auto w-full max-w-xs sm:max-w-md inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                   actionState !== "none" ? "opacity-50 cursor-not-allowed" : ""
-                } bg-indigo-500 text-white hover:bg-indigo-600`}
+                } bg-amber-500 text-slate-950 hover:bg-amber-600`}
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -399,7 +394,6 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
         </div>
       </div>
 
-      {/* Schedule Interview Modal */}
       {showScheduleModal && (
         <ScheduleInterviewModal
           dark={dark}
@@ -415,7 +409,6 @@ export default function CandidateProfileModal({ candidate, dark, stageColor, sta
   );
 }
 
-// ── CV File Section ──────────────────────────────────────────────────────────
 function CvFileSection({
   dark,
   candidate,
@@ -434,7 +427,6 @@ function CvFileSection({
     <div>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold">CV / Resume</h3>
-        {/* Upload new */}
         <label
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
             dark
@@ -450,17 +442,14 @@ function CvFileSection({
         </label>
       </div>
 
-      {/* File card */}
       <div className={`rounded-2xl border overflow-hidden ${dark ? "border-slate-800 bg-slate-950/50" : "border-slate-200 bg-slate-50"}`}>
-        {/* Top: file info row */}
         <div className="flex items-center gap-4 p-4">
-          {/* PDF icon */}
+          {/* PDF Standard Red Branding preserved */}
           <div className="flex-shrink-0 w-12 h-14 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 flex flex-col items-center justify-center shadow-md shadow-red-500/20 relative">
             <span className="text-white text-[10px] font-black tracking-widest">PDF</span>
             <div className="absolute -bottom-0 -right-0 h-3 w-3 bg-white/20 rounded-tl-md" />
           </div>
 
-          {/* File details */}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">{fileName}</p>
             <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>
@@ -485,14 +474,13 @@ function CvFileSection({
             </div>
           </div>
 
-          {/* Action buttons */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setCvPreviewOpen(!cvPreviewOpen)}
               title="Preview CV"
               className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${
                 cvPreviewOpen
-                  ? "bg-indigo-500 text-white"
+                  ? "bg-amber-500 text-slate-950 font-bold"
                   : dark
                   ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
@@ -519,27 +507,22 @@ function CvFileSection({
           </div>
         </div>
 
-        {/* Inline preview pane */}
         {cvPreviewOpen && (
           <div className={`border-t ${dark ? "border-slate-800" : "border-slate-200"}`}>
-            {/* Mock CV preview */}
             <div className={`p-5 space-y-4 text-xs ${dark ? "bg-slate-950/60 text-slate-300" : "bg-white text-slate-700"}`}>
-              {/* Header block */}
               <div className="text-center pb-3 border-b" style={{ borderColor: dark ? "#1e293b" : "#e2e8f0" }}>
                 <p className="text-base font-bold">{candidate.name}</p>
                 <p className={`mt-0.5 ${dark ? "text-slate-400" : "text-slate-500"}`}>{candidate.role} · {candidate.seniority}</p>
                 <p className={`mt-0.5 ${dark ? "text-slate-500" : "text-slate-400"}`}>{candidate.email} · {candidate.phone} · {candidate.location}</p>
               </div>
 
-              {/* Summary block */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#6366f1" }}>Professional Summary</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#eab308" }}>Professional Summary</p>
                 <p className="leading-relaxed">{candidate.summary}</p>
               </div>
 
-              {/* Skills block */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#6366f1" }}>Core Skills</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#eab308" }}>Core Skills</p>
                 <div className="flex flex-wrap gap-1.5">
                   {candidate.skills.map((s) => (
                     <span key={s} className={`px-2 py-0.5 rounded text-[11px] font-medium ${dark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>{s}</span>
@@ -547,9 +530,8 @@ function CvFileSection({
                 </div>
               </div>
 
-              {/* Experience block */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#6366f1" }}>Experience</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#eab308" }}>Experience</p>
                 <div className="space-y-3">
                   <div>
                     <div className="flex items-start justify-between gap-2">
@@ -568,15 +550,13 @@ function CvFileSection({
                 </div>
               </div>
 
-              {/* Education block */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#6366f1" }}>Education</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#eab308" }}>Education</p>
                 <p className="font-semibold text-[12px]">{candidate.education.split(" · ")[0]}</p>
                 <p className={`${dark ? "text-slate-400" : "text-slate-500"}`}>{candidate.education.split(" · ")[1]}</p>
               </div>
             </div>
 
-            {/* Preview footer */}
             <div className={`flex items-center justify-between px-5 py-3 border-t text-xs ${dark ? "border-slate-800 text-slate-500 bg-slate-950/60" : "border-slate-100 text-slate-400 bg-slate-50"}`}>
               <span>{meta.pages} page{meta.pages > 1 ? "s" : ""} · {meta.size}</span>
               <button

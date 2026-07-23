@@ -8,11 +8,13 @@ namespace RecruitmentPlatform.API.Services
     {
         private readonly IApplicationRepository _repo;
         private readonly IAuditService _auditService;
+        private readonly IJobRepository _jobRepo;
 
-        public ApplicationService(IApplicationRepository repo, IAuditService auditService)
+        public ApplicationService(IApplicationRepository repo, IAuditService auditService, IJobRepository jobRepo)
         {
             _repo = repo;
             _auditService = auditService;
+            _jobRepo = jobRepo;
         }
 
         public async Task<IEnumerable<ApplicationResponseDto>> GetAllAsync()
@@ -50,6 +52,15 @@ namespace RecruitmentPlatform.API.Services
             };
 
             await _repo.AddAsync(app);
+
+            // Increment Applicants count on the job
+            var job = await _jobRepo.GetByIdAsync(dto.JobPostingId);
+            if (job != null)
+            {
+                job.Applicants += 1;
+                await _jobRepo.UpdateAsync(job);
+            }
+
             return MapToDto(app);
         }
 

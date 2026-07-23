@@ -74,7 +74,10 @@ public class DbInitializer
                 company_description NVARCHAR(MAX),
                 Contact_person_name NVARCHAR(255),
                 Contact_person_number NVARCHAR(50),
-                Proof_documents_metadata_link NVARCHAR(MAX)
+                Proof_documents_metadata_link NVARCHAR(MAX),
+                RegistrationToken NVARCHAR(MAX),
+                TokenExpiry DATETIME2,
+                Status NVARCHAR(50) NOT NULL DEFAULT 'Pending'
             );",
 
             @"IF OBJECT_ID(N'dbo.Recruiter', N'U') IS NULL 
@@ -85,7 +88,9 @@ public class DbInitializer
                 email NVARCHAR(255) NOT NULL,
                 password_hashed NVARCHAR(255),
                 joined_date DATETIME2,
-                status NVARCHAR(50)
+                status NVARCHAR(50),
+                RegistrationToken NVARCHAR(MAX),
+                TokenExpiry DATETIME2
             );",
 
             @"IF OBJECT_ID(N'dbo.HiringManager', N'U') IS NULL 
@@ -97,7 +102,10 @@ public class DbInitializer
                 department NVARCHAR(255),
                 email NVARCHAR(255) NOT NULL,
                 password_hashed NVARCHAR(255),
-                joined_date DATETIME2
+                joined_date DATETIME2,
+                RegistrationToken NVARCHAR(MAX),
+                TokenExpiry DATETIME2,
+                Status NVARCHAR(50) NOT NULL DEFAULT 'Pending'
             );",
 
             @"IF OBJECT_ID(N'dbo.Candidate', N'U') IS NULL 
@@ -125,6 +133,7 @@ public class DbInitializer
                 CompanyID INT FOREIGN KEY REFERENCES Company(CompanyID),
                 job_title NVARCHAR(255) NOT NULL,
                 type NVARCHAR(50),
+                category NVARCHAR(100) NOT NULL DEFAULT 'Engineering',
                 location NVARCHAR(255),
                 salary_range NVARCHAR(100),
                 applicants INT DEFAULT 0,
@@ -138,6 +147,15 @@ public class DbInitializer
                 description_about_the_company NVARCHAR(MAX),
                 status NVARCHAR(50)
             );",
+
+            // Add category column to existing job table if it doesn't exist
+            @"IF OBJECT_ID(N'dbo.job', N'U') IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_NAME = 'job' AND COLUMN_NAME = 'category'
+            )
+            BEGIN
+                ALTER TABLE job ADD category NVARCHAR(100) NOT NULL DEFAULT 'Engineering';
+            END",
 
             @"IF OBJECT_ID(N'dbo.Recruiter_HM_Assignments', N'U') IS NULL 
             CREATE TABLE Recruiter_HM_Assignments (

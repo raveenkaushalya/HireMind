@@ -2,10 +2,10 @@ import { useTheme } from '../context/ThemeContext';
 import { Mail } from 'lucide-react';
 
 const footerLinks = {
-  'For Candidates': ['Browse Jobs', 'AI Resume Builder', 'Career Resources', 'Salary Calculator', 'Skill Assessment'],
-  'For Recruiters': ['Post a Job', 'AI Screening', 'Talent Pool', 'Analytics', 'Pricing'],
-  'Company': ['About Us', 'Careers', 'Blog', 'Press', 'Contact'],
-  'Legal': ['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'GDPR'],
+  'For Candidates': ['Browse Jobs', 'AI Resume Builder', 'Career Resources', 'Skill Assessment'],
+  'For Recruiters': ['Post a Job', 'AI Screening', 'Talent Pool', 'Analytics'],
+  'Company': ['About Us', 'Careers', 'Contact'],
+  'Legal': ['Privacy Policy', 'Terms of Service', 'GDPR'],
 };
 
 export default function Footer() {

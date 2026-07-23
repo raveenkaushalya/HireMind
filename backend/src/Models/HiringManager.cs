@@ -10,5 +10,8 @@ namespace RecruitmentPlatform.API.Models
         public string Email { get; set; } = string.Empty;
         public string? PasswordHash { get; set; }
         public DateTime? JoinedDate { get; set; } = DateTime.UtcNow;
+        public string? RegistrationToken { get; set; }
+        public DateTime? TokenExpiry { get; set; }
+        public string Status { get; set; } = "Pending";
     }
 }

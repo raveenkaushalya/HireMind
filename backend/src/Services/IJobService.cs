@@ -10,5 +10,6 @@ namespace RecruitmentPlatform.API.Services
         Task<JobResponseDto> CreateAsync(JobRequestDto dto);
         Task<JobResponseDto?> UpdateAsync(int id, JobRequestDto dto);
         Task<bool> CloseAsync(int id);
+        Task<bool> ChangeStatusAsync(int id, string status);
     }
 }

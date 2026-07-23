@@ -1,5 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
-// Removed import of { type Candidate } from '../../data';
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 // ─────────────────────────── Types ───────────────────────────
@@ -50,13 +49,13 @@ type EntityType = "company" | "recruiter" | "candidate";
 type Tab = "overview" | "candidates" | "recruiters" | "companies";
 
 // ─────────────────────────── Constants ───────────────────────────
-const AVATAR_COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981", "#14b8a6", "#0ea5e9"];
+const AVATAR_COLORS = ["#d97706", "#b45309", "#eab308", "#ca8a04", "#a16207", "#10b981", "#0ea5e9", "#8b5cf6"];
 
 // ─────────────────────────── Helpers ───────────────────────────
-const initialsOf = (name: string) => name.split(" ").map((n) => n[0]).join("");
+const initialsOf = (name: string) => name ? name.split(" ").map((n) => n[0]).join("") : "U";
 
 const ROLE_STYLES: Record<Role, string> = {
-  Admin: "bg-violet-500/15 text-violet-400 ring-1 ring-inset ring-violet-500/30",
+  Admin: "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30",
   Recruiter: "bg-sky-500/15 text-sky-400 ring-1 ring-inset ring-sky-500/30",
   "Hiring Manager": "bg-emerald-500/15 text-emerald-400 ring-1 ring-inset ring-emerald-500/30",
   Viewer: "bg-slate-500/15 text-slate-400 ring-1 ring-inset ring-slate-500/30",
@@ -70,8 +69,21 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [relationships] = useState<Relationship[]>([]);
   const [candidatesData, setCandidatesData] = useState<any[]>([]);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { token } = useAuth();
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     if (!token) return;
 
@@ -95,7 +107,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             shortlistedAt: new Date().toISOString(),
             daysInPipeline: 2,
             status: "Active",
-            avatar: "#10b981",
+            avatar: "#eab308",
             email: c.email || "",
             phone: c.phoneNumber || "",
             education: c.education || "",
@@ -129,7 +141,28 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             website: "",
             location: c.location || "",
             size: c.size || "",
-            proofUrl: c.proofDocumentsMetadataLink
+            proofUrl: c.proofDocumentsMetadataLink || c.proofUrl || c.proofDocument || ""
+          })));
+        }
+      }).catch(console.error);
+
+    // Fetch recruiters
+    fetch('/api/recruiters', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setRecruiters(data.map((r: any, i) => ({
+            id: r.id.toString(),
+            name: r.name || "Unknown",
+            email: r.email || "",
+            role: "Recruiter",
+            status: r.status || "Pending",
+            assignedCompanyIds: [],
+            joinedAt: r.joinedDate ? new Date(r.joinedDate).toLocaleDateString() : "Recently",
+            lastActive: "—",
+            avatar: AVATAR_COLORS[i % AVATAR_COLORS.length],
+            phone: "—",
+            location: "—"
           })));
         }
       }).catch(console.error);
@@ -203,7 +236,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     );
   };
 
-  const assignCompanyToRecruiter = (recruiterId: string, companyId: string) =>
+  const assignCompanyToRecruiter = (recruiterId: string, companyId: string) => {
     setRecruiters((p) =>
       p.map((r) =>
         r.id !== recruiterId
@@ -213,29 +246,67 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             : { ...r, assignedCompanyIds: [...r.assignedCompanyIds, companyId] }
       )
     );
+    setCompanies((p) =>
+      p.map((c) =>
+        c.id !== companyId
+          ? c
+          : c.recruiterIds.includes(recruiterId)
+            ? { ...c, recruiterIds: c.recruiterIds.filter((x) => x !== recruiterId) }
+            : { ...c, recruiterIds: [...c.recruiterIds, recruiterId] }
+      )
+    );
+  };
 
-  const addRecruiter = () => {
+  const addRecruiter = async () => {
     if (!recruiterForm.name || !recruiterForm.email) return;
-    const newRec: Recruiter = {
-      id: `REC-${String(recruiters.length + 6).padStart(3, "0")}`,
-      name: recruiterForm.name,
-      email: recruiterForm.email,
-      role: recruiterForm.role,
-      status: "Pending",
-      assignedCompanyIds: recruiterForm.companyId ? [recruiterForm.companyId] : [],
-      joinedAt: new Date().toISOString().slice(0, 10),
-      lastActive: "—",
-      avatar: AVATAR_COLORS[recruiters.length % AVATAR_COLORS.length],
-      phone: "—",
-      location: "—",
-    };
-    setRecruiters((p) => [...p, newRec]);
-    setEmailSent(newRec.email);
-    setRecruiterForm({ name: "", email: "", role: "Recruiter", companyId: "" });
-    setTimeout(() => {
-      setShowAddRecruiter(false);
-      setEmailSent(null);
-    }, 3200);
+
+    try {
+      const res = await fetch('/api/recruiters', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: recruiterForm.name,
+          email: recruiterForm.email,
+          status: 'Pending'
+        })
+      });
+
+      if (res.ok) {
+        const backendRec = await res.json();
+        const newRec: Recruiter = {
+          id: backendRec.id.toString(),
+          name: backendRec.name,
+          email: backendRec.email,
+          role: recruiterForm.role,
+          status: backendRec.status || 'Pending',
+          assignedCompanyIds: recruiterForm.companyId ? [recruiterForm.companyId] : [],
+          joinedAt: backendRec.joinedDate ? new Date(backendRec.joinedDate).toLocaleDateString() : new Date().toLocaleDateString(),
+          lastActive: "—",
+          avatar: AVATAR_COLORS[recruiters.length % AVATAR_COLORS.length],
+          phone: "—",
+          location: "—",
+        };
+        setRecruiters((p) => [...p, newRec]);
+        if (recruiterForm.companyId) {
+          setCompanies((p) => p.map((c) => c.id === recruiterForm.companyId ? { ...c, recruiterIds: [...c.recruiterIds, newRec.id] } : c));
+        }
+        setEmailSent(newRec.email);
+        setRecruiterForm({ name: "", email: "", role: "Recruiter", companyId: "" });
+        setTimeout(() => {
+          setShowAddRecruiter(false);
+          setEmailSent(null);
+        }, 3200);
+      } else {
+        const errorText = await res.text();
+        alert("Failed to add recruiter: " + errorText);
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert("Error adding recruiter: " + e.message);
+    }
   };
 
   const openPanel = (type: EntityType, id: string) => {
@@ -259,14 +330,14 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   // ─────────────────────────── Render ───────────────────────────
   return (
     <div className="min-h-screen bg-[#0b0f1a] text-slate-100 transition-colors duration-300">
-      {/* Ambient glow */}
+      {/* Ambient gold glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-violet-600/15 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-rose-600/10 blur-[100px]" />
+        <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-amber-500/15 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-yellow-600/10 blur-[100px]" />
       </div>
 
       {/* Top navigation */}
-      <div className="sticky top-0 z-30 relative z-10 flex items-center justify-between gap-4 h-14 px-4 sm:px-6 border-b border-slate-800/60 bg-slate-900/60 backdrop-blur-xl">
+      <div className="sticky top-0 z-30 relative flex items-center justify-between gap-4 h-14 px-4 sm:px-6 border-b border-slate-800/60 bg-slate-900/60 backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <span className="text-base font-extrabold tracking-tight">
             <span className="text-white">Hire</span><span style={{ color: "#eab308" }}>Minds</span><span className="text-red-500">.</span>
@@ -278,7 +349,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${tab === t.id
-                ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20"
+                ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-amber-950 shadow-lg shadow-amber-500/20"
                 : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
                 }`}
             >
@@ -287,31 +358,48 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Profile Dropdown Container */}
+        <div className="relative" ref={dropdownRef}>
           <button
-            onClick={onLogout}
-            className="hidden sm:flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-xl border border-slate-800 hover:bg-slate-800/60 transition-all"
+            onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+            className="flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-xl border border-slate-800 hover:bg-slate-800/60 transition-all cursor-pointer"
           >
-            <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-md flex-shrink-0">
+            <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-amber-950 bg-gradient-to-br from-amber-400 to-yellow-600 shadow-md flex-shrink-0">
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
             <div className="text-left hidden lg:block">
               <p className="text-xs font-semibold leading-tight text-slate-200">System Admin</p>
               <p className="text-[10px] text-slate-500 leading-tight">admin@hireminds.co</p>
             </div>
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 text-slate-500 transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          <div className="flex sm:hidden items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-[10px] font-bold text-slate-400">Administrator</span>
-          </div>
-          <button onClick={onLogout} className="h-8 px-3 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800/60 transition-colors">
-            Logout
-          </button>
+
+          {/* Dropdown Menu */}
+          {profileDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-800/80 bg-slate-900/95 p-2 shadow-2xl backdrop-blur-xl z-50 animate-fadeIn">
+              <div className="px-3 py-2 border-b border-slate-800/60 mb-1">
+                <p className="text-xs font-bold text-slate-200">System Admin</p>
+                <p className="text-[10px] text-slate-500 truncate">admin@hireminds.co</p>
+              </div>
+              <button
+                onClick={() => {
+                  setProfileDropdownOpen(false);
+                  onLogout();
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors cursor-pointer"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -322,7 +410,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all ${tab === t.id ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
+              className={`flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all ${tab === t.id ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-amber-950" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
                 }`}
             >
               {t.icon}
@@ -332,13 +420,13 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      <main className="relative z-10 px-4 sm:px-6 py-6 max-w-[1280px] mx-auto space-y-6 animate-fadeIn">
+      <main className="relative z-10 px-4 sm:px-6 py-6 max-w-[1280px] mx-auto space-y-6">
 
         {/* ═════════ Overview ═════════ */}
         {tab === "overview" && (
           <>
             <div className="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/60 p-6 backdrop-blur-md">
-              <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full blur-3xl opacity-20 bg-violet-500" />
+              <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full blur-3xl opacity-20 bg-amber-500" />
               <h2 className="text-2xl font-extrabold tracking-tight">System Administration</h2>
               <p className="text-sm mt-1 text-slate-400">Central hub for candidate management, recruiter assignments, and company onboarding.</p>
               <div className="flex flex-wrap gap-2 mt-4">
@@ -349,13 +437,12 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <GlowStat label="Total Candidates" value={candidatesData.length} color="#6366f1" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="7" r="4" /><path strokeLinecap="round" d="M2 21v-1a5 5 0 015-5h4a5 5 0 015 5v1" /><path strokeLinecap="round" d="M16 3.13a4 4 0 010 7.75M21 21v-1a5 5 0 00-3-4.58" /></svg>} />
+              <GlowStat label="Total Candidates" value={candidatesData.length} color="#eab308" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="7" r="4" /><path strokeLinecap="round" d="M2 21v-1a5 5 0 015-5h4a5 5 0 015 5v1" /><path strokeLinecap="round" d="M16 3.13a4 4 0 010 7.75M21 21v-1a5 5 0 00-3-4.58" /></svg>} />
               <GlowStat label="Active Recruiters" value={activeRecruiters} color="#0ea5e9" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2a3 3 0 015.356-1.857m0 0a5 5 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>} />
-              <GlowStat label="Pending Companies" value={pendingCompanies} color="#f59e0b" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>} />
+              <GlowStat label="Pending Companies" value={pendingCompanies} color="#d97706" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>} />
               <GlowStat label="Active Relations" value={activeRelations} color="#10b981" icon={<svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>} />
             </div>
 
-            {/* Roles + pending queue */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <RolesPanel recruiters={recruiters} onOpenRecruiter={(id) => openPanel("recruiter", id)} />
               <PendingQueue companies={companies} onApprove={approveCompany} onReject={rejectCompany} />
@@ -377,9 +464,9 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-800/60 text-slate-500 uppercase tracking-wider font-bold">
-                    <th className="py-3 px-4">Candidate</th>
-                    <th className="py-3 px-4">Role</th>
-                    <th className="py-3 px-4">Location</th>
+                    <th className="py-3 px-4 text-left">Candidate</th>
+                    <th className="py-3 px-4 text-left">Role</th>
+                    <th className="py-3 px-4 text-left">Location</th>
                     <th className="py-3 px-4 text-center">Status</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
@@ -392,7 +479,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <tr key={c.id} className="border-b last:border-none border-slate-800/50 hover:bg-slate-900/40 transition-colors">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm" style={{ background: c.avatar }}>
+                          <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-amber-950 shadow-sm" style={{ background: c.avatar }}>
                             {initialsOf(c.name)}
                           </div>
                           <div>
@@ -405,7 +492,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       <td className="py-3 px-4 text-slate-400">{c.location}</td>
                       <td className="py-3 px-4 text-center"><Badge tone={statusTone(c.status === "Active" ? "Active" : c.status)}>{c.status}</Badge></td>
                       <td className="py-3 px-4 text-right">
-                        <button onClick={() => openPanel("candidate", c.id)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/30 transition-all">
+                        <button onClick={() => openPanel("candidate", c.id)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-300 hover:bg-amber-500/30 transition-all cursor-pointer">
                           <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>
                           Manage
                         </button>
@@ -428,7 +515,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               </div>
               <button
                 onClick={() => setShowAddRecruiter(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-lg shadow-violet-500/25 transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 shadow-lg shadow-amber-500/25 transition-all cursor-pointer"
               >
                 <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                 Add Recruiter
@@ -436,13 +523,13 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
 
             {showAddRecruiter && (
-              <div className="rounded-2xl border border-violet-500/40 bg-slate-900/70 p-5 backdrop-blur-md">
+              <div className="rounded-2xl border border-amber-500/40 bg-slate-900/70 p-5 backdrop-blur-md">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-sm font-bold">Invite New Recruiter</h4>
                   <button onClick={() => setShowAddRecruiter(false)} className="text-xs text-slate-500 hover:text-slate-300">Cancel</button>
                 </div>
                 {emailSent && (
-                  <div className="mb-4 rounded-lg px-3 py-2.5 text-xs font-medium flex items-start gap-2 bg-violet-500/15 text-violet-300 ring-1 ring-inset ring-violet-500/30">
+                  <div className="mb-4 rounded-lg px-3 py-2.5 text-xs font-medium flex items-start gap-2 bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30">
                     <svg viewBox="0 0 24 24" className="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M22 8c0-2.8-2.2-5-5-5H7C4.2 3 2 5.2 2 8v8c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V8z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2 8l10 6 10-6" />
                     </svg>
@@ -456,7 +543,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   <SelectField label="Assign to Client Company" value={recruiterForm.companyId} onChange={(v) => setRecruiterForm({ ...recruiterForm, companyId: v })} options={["", ...companies.filter(c => c.status !== "Rejected").map(c => c.id)]} formatOption={(id) => id === "" ? "Unassigned" : companies.find(c => c.id === id)?.name ?? id} />
                 </div>
                 <div className="mt-4 flex items-center gap-2">
-                  <button onClick={addRecruiter} className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-md shadow-violet-500/25 transition-all">
+                  <button onClick={addRecruiter} className="px-4 py-2 rounded-lg text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 shadow-md shadow-amber-500/25 transition-all cursor-pointer">
                     Send Invite
                   </button>
                   <p className="text-[10px] text-slate-500">An email with a verification link will be sent automatically.</p>
@@ -475,13 +562,13 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               }).map((r) => (
                 <div key={r.id} className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:border-slate-700 backdrop-blur-md">
                   <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-xl flex items-center justify-center text-base font-bold text-white shadow-md flex-shrink-0" style={{ background: r.avatar }}>
+                    <div className="h-12 w-12 rounded-xl flex items-center justify-center text-base font-bold text-amber-950 shadow-md flex-shrink-0" style={{ background: r.avatar }}>
                       {initialsOf(r.name)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-bold">{r.name}</p>
-                        <button onClick={() => changeRecruiterRole(r.id)} title="Click to cycle roles" className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all hover:brightness-110 ${ROLE_STYLES[r.role]}`}>
+                        <button onClick={() => changeRecruiterRole(r.id)} title="Click to cycle roles" className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all hover:brightness-110 cursor-pointer ${ROLE_STYLES[r.role]}`}>
                           {r.role}
                           <svg viewBox="0 0 24 24" className="h-2.5 w-2.5 ml-0.5" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                         </button>
@@ -494,10 +581,10 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       </div>
                     </div>
                     <div className="flex-shrink-0 flex gap-1.5">
-                      <button onClick={() => toggleRecruiterStatus(r.id)} className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${r.status === "Active" ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25" : "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"}`}>
+                      <button onClick={() => toggleRecruiterStatus(r.id)} className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${r.status === "Active" ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25" : "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"}`}>
                         {r.status === "Active" ? "Suspend" : "Activate"}
                       </button>
-                      <button onClick={() => openPanel("recruiter", r.id)} className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-200 hover:bg-slate-700 transition-all">Manage</button>
+                      <button onClick={() => openPanel("recruiter", r.id)} className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-200 hover:bg-slate-700 transition-all cursor-pointer">Manage</button>
                     </div>
                   </div>
 
@@ -512,13 +599,13 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         const comp = companyById(cid);
                         if (!comp) return null;
                         return (
-                          <span key={cid} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20 hover:bg-sky-500/20 transition-all group">
+                          <span key={cid} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-300 ring-1 ring-inset ring-amber-500/20 hover:bg-amber-500/20 transition-all group">
                             <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
                             {comp.name}
                             <button
                               onClick={() => assignCompanyToRecruiter(r.id, cid)}
                               title="Remove assignment"
-                              className="h-3.5 w-3.5 rounded-full flex items-center justify-center transition-all hover:bg-red-500/30 hover:text-red-300"
+                              className="h-3.5 w-3.5 rounded-full flex items-center justify-center transition-all hover:bg-red-500/30 hover:text-red-300 cursor-pointer"
                             >
                               ×
                             </button>
@@ -532,13 +619,11 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           value=""
                           onChange={(e) => {
                             if (e.target.value) {
-                              const rid = e.target.value;
-                              setRecruiters((p) => p.map((rec) => rec.id === r.id ? { ...rec, assignedCompanyIds: [...rec.assignedCompanyIds, rid] } : rec));
-                              setCompanies((p) => p.map((c) => c.id === rid ? { ...c, recruiterIds: [...c.recruiterIds, r.id] } : c));
+                              assignCompanyToRecruiter(r.id, e.target.value);
                               e.target.value = "";
                             }
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer bg-slate-950/60 border border-slate-800 text-slate-100"
+                          className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer bg-slate-950/60 border border-slate-800 text-slate-100 focus:border-amber-500"
                         >
                           <option value="">Assign to a company…</option>
                           {companies.filter((c) => c.status === "Approved" && !r.assignedCompanyIds.includes(c.id)).map((c) => (
@@ -573,11 +658,11 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   <button
                     key={s}
                     onClick={() => setCompanyStatusFilter(s)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${companyStatusFilter === s
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${companyStatusFilter === s
                       ? s === "Approved" ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30"
                         : s === "Pending" ? "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30"
                           : s === "Rejected" ? "bg-red-500/15 text-red-300 ring-1 ring-inset ring-red-500/30"
-                            : "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20"
+                            : "bg-gradient-to-r from-amber-500 to-yellow-600 text-amber-950 shadow-lg shadow-amber-500/20"
                       : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
                       }`}
                   >
@@ -594,52 +679,73 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 if (!filteringSearch) return true;
                 return c.name.toLowerCase().includes(filteringSearch) || c.industry.toLowerCase().includes(filteringSearch) || c.contact.toLowerCase().includes(filteringSearch);
               }).map((c) => (
-                <div key={c.id} className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:border-slate-700 backdrop-blur-md">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="h-11 w-11 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-md bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0">
-                        {initialsOf(c.name)}
+                <div key={c.id} className="relative rounded-2xl border border-slate-800/60 bg-slate-900/60 p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:border-slate-700 backdrop-blur-md flex flex-col justify-between">
+                  <div>
+                    {/* Top row: Avatar & Company Info + Top-Right Actions (Proof Doc + Badge) */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="h-11 w-11 rounded-xl flex items-center justify-center text-sm font-bold text-amber-950 shadow-md bg-gradient-to-br from-amber-500 to-yellow-600 flex-shrink-0">
+                          {initialsOf(c.name)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold truncate pr-2">{c.name}</p>
+                          <p className="text-[10px] text-slate-500">{c.industry}</p>
+                          <p className="text-[10px] text-slate-500">{c.email}</p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold truncate">{c.name}</p>
-                        <p className="text-[10px] text-slate-500">{c.industry}</p>
-                        <p className="text-[10px] text-slate-500">{c.email}</p>
+
+                      {/* Top Right Section: Transparent Blue Proof Doc + Status Badge */}
+                      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                        <Badge tone={statusTone(c.status)}>{c.status}</Badge>
+                        {c.proofUrl && (
+                          <a
+                            href={c.proofUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Download Verification Proof Document"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 hover:text-sky-300 border border-sky-500/20 transition-all cursor-pointer shadow-sm"
+                          >
+                            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Proof Doc
+                          </a>
+                        )}
                       </div>
                     </div>
-                    <Badge tone={statusTone(c.status)}>{c.status}</Badge>
+
+                    {recruiters.filter((r) => r.status === "Active" && !c.recruiterIds.includes(r.id)).length > 0 && (
+                      <div className="mt-4 relative flex-1 min-w-[130px]">
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              assignCompanyToRecruiter(e.target.value, c.id);
+                            }
+                          }}
+                          className="w-full px-2.5 py-1 rounded-lg text-xs outline-none cursor-pointer bg-slate-950/60 border border-slate-800 text-slate-100 focus:border-amber-500"
+                        >
+                          <option value="">+ Assign recruiter</option>
+                          {recruiters.filter((r) => r.status === "Active" && !c.recruiterIds.includes(r.id)).map((r) => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
 
-                  {recruiters.filter((r) => r.status === "Active" && !c.recruiterIds.includes(r.id)).length > 0 && (
-                    <div className="mt-4 relative flex-1 min-w-[130px]">
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            e.stopPropagation();
-                          }
-                        }}
-                        className="w-full px-2.5 py-1 rounded-lg text-xs outline-none cursor-pointer bg-slate-950/60 border border-slate-800 text-slate-100"
-                      >
-                        <option value="">+ Assign recruiter</option>
-                        {recruiters.filter((r) => r.status === "Active" && !c.recruiterIds.includes(r.id)).map((r) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  <div className="mt-4 flex items-center justify-between gap-2">
+                  <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between gap-2">
                     <button
                       onClick={() => openPanel("company", c.id)}
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-300 hover:text-indigo-200 transition-all"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-all cursor-pointer"
                     >
                       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
                       Full Details &amp; Management
                     </button>
                     {c.status === "Pending" && (
                       <div className="flex gap-1.5">
-                        <button onClick={() => approveCompany(c.id)} className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 transition-all">✓ Approve</button>
-                        <button onClick={() => rejectCompany(c.id)} className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-all">✕ Reject</button>
+                        <button onClick={() => approveCompany(c.id)} className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 transition-all cursor-pointer">✓ Approve</button>
+                        <button onClick={() => rejectCompany(c.id)} className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-all cursor-pointer">✕ Reject</button>
                       </div>
                     )}
                   </div>
@@ -666,14 +772,8 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           onToggleRecruiterStatus={toggleRecruiterStatus}
           editCompany={(id, field, value) => setCompanies((p) => p.map((c) => (c.id === id ? { ...c, [field]: value } : c)))}
           editRecruiter={(id, field, value) => setRecruiters((p) => p.map((r) => (r.id === id ? { ...r, [field]: value } : r)))}
-          onAssignCompany={(cid, rid) => {
-            setCompanies((p) => p.map((c) => (c.id === cid ? { ...c, recruiterIds: [...c.recruiterIds, rid] } : c)));
-            setRecruiters((p) => p.map((r) => (r.id === rid ? { ...r, assignedCompanyIds: [...r.assignedCompanyIds, cid] } : r)));
-          }}
-          onUnassignCompany={(cid, rid) => {
-            setCompanies((p) => p.map((c) => (c.id === cid ? { ...c, recruiterIds: c.recruiterIds.filter((x) => x !== rid) } : c)));
-            setRecruiters((p) => p.map((r) => (r.id === rid ? { ...r, assignedCompanyIds: r.assignedCompanyIds.filter((x) => x !== cid) } : r)));
-          }}
+          onAssignCompany={(cid, rid) => assignCompanyToRecruiter(rid, cid)}
+          onUnassignCompany={(cid, rid) => assignCompanyToRecruiter(rid, cid)}
         />
       )}
 
@@ -685,10 +785,9 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════
-//                              SUB-COMPONENTS
+//                                SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════════
 
-// ─────────────────────────── Stat Card ───────────────────────────
 function GlowStat({ label, value, color, icon }: { label: string; value: string | number; color: string; icon: React.ReactNode }) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/60 p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/60 hover:border-slate-700 backdrop-blur-md">
@@ -706,11 +805,10 @@ function GlowStat({ label, value, color, icon }: { label: string; value: string 
   );
 }
 
-// ─────────────────────────── Badge ───────────────────────────
 function Badge({ children, tone = "slate" }: { children: React.ReactNode; tone?: "slate" | "violet" | "emerald" | "amber" | "red" | "sky" | "rose" | "teal" | "pink" }) {
   const tones: Record<string, string> = {
     slate: "bg-slate-500/15 text-slate-300 ring-1 ring-inset ring-slate-500/30",
-    violet: "bg-violet-500/15 text-violet-300 ring-1 ring-inset ring-violet-500/30",
+    violet: "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30",
     emerald: "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30",
     amber: "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30",
     red: "bg-red-500/15 text-red-300 ring-1 ring-inset ring-red-500/30",
@@ -721,18 +819,18 @@ function Badge({ children, tone = "slate" }: { children: React.ReactNode; tone?:
   };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${tones[tone]}`}>{children}</span>;
 }
+
 const statusTone = (s: string): ("slate" | "violet" | "emerald" | "amber" | "red" | "sky" | "rose" | "teal" | "pink") => {
   if (s === "Active" || s === "Approved" || s === "Hired") return "emerald";
-  if (s === "Pending" || s === "On Hold" || s === "On Hold") return "amber";
+  if (s === "Pending" || s === "On Hold") return "amber";
   if (s === "Rejected") return "red";
   if (s === "Suspended") return "rose";
-  if (s === "Technical" || s === "Onsite") return "violet";
+  if (s === "Technical" || s === "Onsite") return "amber";
   if (s === "Offer") return "pink";
   if (s === "Phone Screen") return "sky";
   return "slate";
 };
 
-// ─────────────────────────── Search Input ───────────────────────────
 function SearchInput({ search, setSearch, placeholder }: { search: string; setSearch: (v: string) => void; placeholder: string }) {
   return (
     <div className="relative min-w-[200px]">
@@ -743,13 +841,12 @@ function SearchInput({ search, setSearch, placeholder }: { search: string; setSe
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:border-violet-500 transition-colors"
+        className="w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:border-amber-500 transition-colors"
       />
     </div>
   );
 }
 
-// ─────────────────────────── Roles Panel ───────────────────────────
 function RolesPanel({ recruiters, onOpenRecruiter }: { recruiters: Recruiter[]; onOpenRecruiter: (id: string) => void }) {
   const rolesData = [
     { role: "Admin" as Role, desc: "Full platform control", count: 1, clickable: false },
@@ -763,7 +860,7 @@ function RolesPanel({ recruiters, onOpenRecruiter }: { recruiters: Recruiter[]; 
     Recruiter: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2a3 3 0 015.356-1.857m0 0a5 5 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
     Viewer: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>,
   };
-  const roleColors: Record<Role, string> = { Admin: "#8b5cf6", "Hiring Manager": "#10b981", Recruiter: "#0ea5e9", Viewer: "#64748b" };
+  const roleColors: Record<Role, string> = { Admin: "#eab308", "Hiring Manager": "#10b981", Recruiter: "#0ea5e9", Viewer: "#64748b" };
 
   return (
     <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-5 backdrop-blur-md">
@@ -772,8 +869,8 @@ function RolesPanel({ recruiters, onOpenRecruiter }: { recruiters: Recruiter[]; 
         {rolesData.map((r) => (
           <button
             key={r.role}
-            onClick={() => r.clickable && onOpenRecruiter(recruiters.find((x) => x.role === r.role && x.status === "Active")?.id ?? recruiters[0].id)}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all hover:brightness-125 ${r.clickable ? "bg-slate-950/60 border border-slate-800 hover:border-slate-600" : "bg-slate-900/40 border border-transparent"}`}
+            onClick={() => r.clickable && onOpenRecruiter(recruiters.find((x) => x.role === r.role && x.status === "Active")?.id ?? recruiters[0]?.id)}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all hover:brightness-125 cursor-pointer ${r.clickable ? "bg-slate-950/60 border border-slate-800 hover:border-slate-600" : "bg-slate-900/40 border border-transparent"}`}
           >
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md" style={{ background: `linear-gradient(135deg, ${roleColors[r.role]}22, ${roleColors[r.role]}08)`, color: roleColors[r.role] }}>
@@ -799,7 +896,6 @@ function RolesPanel({ recruiters, onOpenRecruiter }: { recruiters: Recruiter[]; 
   );
 }
 
-// Pending companies queue
 function PendingQueue({ companies, onApprove, onReject }: { companies: Company[]; onApprove: (id: string) => void; onReject: (id: string) => void }) {
   return (
     <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-5 backdrop-blur-md">
@@ -810,7 +906,7 @@ function PendingQueue({ companies, onApprove, onReject }: { companies: Company[]
         <div className="space-y-2.5">
           {companies.filter((c) => c.status === "Pending").map((c) => (
             <div key={c.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20">
-              <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-amber-500 to-orange-600 flex-shrink-0 shadow-lg shadow-amber-500/20">
+              <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold text-amber-950 bg-gradient-to-br from-amber-500 to-yellow-600 flex-shrink-0 shadow-lg shadow-amber-500/20">
                 {initialsOf(c.name)}
               </div>
               <div className="min-w-0 flex-1">
@@ -818,8 +914,8 @@ function PendingQueue({ companies, onApprove, onReject }: { companies: Company[]
                 <p className="text-[10px] text-amber-400/80">{c.industry} · {c.contact}</p>
               </div>
               <div className="flex gap-1">
-                <button onClick={() => onApprove(c.id)} className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-[10px] font-bold hover:bg-emerald-500/25">✓ Approve</button>
-                <button onClick={() => onReject(c.id)} className="px-2 py-1 rounded-lg bg-red-500/15 text-red-400 text-[10px] font-bold hover:bg-red-500/25">✕ Reject</button>
+                <button onClick={() => onApprove(c.id)} className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-[10px] font-bold hover:bg-emerald-500/25 cursor-pointer">✓ Approve</button>
+                <button onClick={() => onReject(c.id)} className="px-2 py-1 rounded-lg bg-red-500/15 text-red-400 text-[10px] font-bold hover:bg-red-500/25 cursor-pointer">✕ Reject</button>
               </div>
             </div>
           ))}
@@ -829,8 +925,7 @@ function PendingQueue({ companies, onApprove, onReject }: { companies: Company[]
   );
 }
 
-// ─────────────────────────── Field Helpers ───────────────────────────
-const INPUT_CLS = "w-full px-3 py-2.5 rounded-xl text-sm outline-none bg-slate-950/60 border border-slate-700/60 text-slate-100 placeholder-slate-500 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all";
+const INPUT_CLS = "w-full px-3 py-2.5 rounded-xl text-sm outline-none bg-slate-950/60 border border-slate-700/60 text-slate-100 placeholder-slate-500 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all";
 const LBL_CLS = "block text-xs font-semibold text-slate-300 mb-1.5";
 
 function InputField({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
@@ -856,7 +951,7 @@ function SelectField({ label, value, onChange, options, formatOption }: { label:
 }
 
 // ───────────────────────────────────────────────────────────────────────────────────
-//                         ENTITY DETAIL PANEL (SIDE DRAWER)
+//                            ENTITY DETAIL PANEL (MODAL)
 // ───────────────────────────────────────────────────────────────────────────────────
 function EntityDetailPanel({
   type, company, recruiter, candidate, panelTab, setPanelTab,
@@ -912,15 +1007,13 @@ function EntityDetailPanel({
     { id: "overview" as const, label: "Overview", icon: <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> },
     { id: "edit" as const, label: "Profile Edit", icon: <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.4-9.4a2 2 0 112.8 2.8L18 14l-4 1 1-4 7.6-7.6z" /></svg> },
     { id: "access" as const, label: "Access Control", icon: <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg> },
-    { id: "password" as const, label: "Password", icon: <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.74 5.74 6 6 0 11-9-9A6 6 0 0119 5l-1.1-1.1a2 2 0 00-1.4-.58h-1a2 2 0 00-2 2v1a2 2 0 002 2h1a2 2 0 002-2z" /><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" /></svg> },
+    ...(type === "recruiter" ? [{ id: "password" as const, label: "Password", icon: <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.74 5.74 6 6 0 11-9-9A6 6 0 0119 5l-1.1-1.1a2 2 0 00-1.4-.58h-1a2 2 0 00-2 2v1a2 2 0 002 2h1a2 2 0 002-2z" /><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" /></svg> }] : []),
   ];
 
   return (
     <>
-      {/* Overlay */}
       <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Centered Modal */}
       <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-6 pointer-events-none">
         <div className="pointer-events-auto w-full sm:max-w-xl max-h-screen sm:max-h-[88vh] bg-slate-900/98 sm:rounded-2xl border border-slate-800/60 shadow-2xl backdrop-blur-xl flex flex-col animate-fadeIn overflow-hidden">
           {/* Header */}
@@ -936,7 +1029,7 @@ function EntityDetailPanel({
                 ID: {type === "company" ? company?.id : type === "recruiter" ? recruiter?.id : candidate?.id}
               </p>
             </div>
-            <button onClick={onClose} className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 transition-colors">
+            <button onClick={onClose} className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 transition-colors cursor-pointer">
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
@@ -947,8 +1040,8 @@ function EntityDetailPanel({
               <button
                 key={t.id}
                 onClick={() => setPanelTab(t.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all capitalize ${panelTab === t.id
-                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all capitalize cursor-pointer ${panelTab === t.id
+                  ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-amber-950 shadow-lg shadow-amber-500/20"
                   : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
                   }`}
               >
@@ -961,7 +1054,7 @@ function EntityDetailPanel({
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
 
-            {/* ─── Company panel ─── */}
+            {/* Company panel */}
             {type === "company" && company && (
               <>
                 {panelTab === "overview" && (
@@ -969,11 +1062,11 @@ function EntityDetailPanel({
                     <CompanyOverview company={company} recruiters={recruiters} />
                     {company.status === "Pending" && (
                       <div className="flex gap-2">
-                        <button onClick={() => onApproveCompany(company.id)} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/20 transition-all">
+                        <button onClick={() => onApproveCompany(company.id)} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer">
                           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                           Approve Registration
                         </button>
-                        <button onClick={() => onRejectCompany(company.id)} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 shadow-lg shadow-rose-500/20 transition-all">
+                        <button onClick={() => onRejectCompany(company.id)} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 shadow-lg shadow-rose-500/20 transition-all cursor-pointer">
                           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                           Reject
                         </button>
@@ -992,16 +1085,10 @@ function EntityDetailPanel({
                     onUnassign={(rid) => onUnassignCompany(company.id, rid)}
                   />
                 )}
-                {panelTab === "password" && (
-                  <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5 text-center">
-                    <p className="text-xs font-bold text-slate-400">Password management is not available for company accounts.</p>
-                    <p className="text-[10px] text-slate-500 mt-1">Company portal credentials are managed by the company's own admin through their workspace.</p>
-                  </div>
-                )}
               </>
             )}
 
-            {/* ─── Recruiter panel ─── */}
+            {/* Recruiter panel */}
             {type === "recruiter" && recruiter && (
               <>
                 {panelTab === "overview" && (
@@ -1009,7 +1096,7 @@ function EntityDetailPanel({
                     <RecruiterOverview recruiter={recruiter} />
                     <button
                       onClick={() => onToggleRecruiterStatus(recruiter.id)}
-                      className={`w-full py-2.5 rounded-xl text-xs font-bold text-white transition-all ${recruiter.status === "Active" ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-lg shadow-amber-500/20" : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/20"}`}
+                      className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${recruiter.status === "Active" ? "bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white shadow-lg shadow-amber-500/20" : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20"}`}
                     >
                       {recruiter.status === "Active" ? "Suspend Portal Access" : "Restore Portal Access"}
                     </button>
@@ -1028,13 +1115,13 @@ function EntityDetailPanel({
                 )}
                 {panelTab === "password" && (
                   <PasswordPanel pw={pw} setPw={setPw} pwSuccess={pwSuccess} onSubmit={handlePwReset}
-                    title="Reset Recruiter Password" desc="As an admin, you can reset this recruiter's portal password. No current password is required."
+                    title="Reset Recruiter Password" desc="As an admin, you can reset this recruiter's portal password."
                   />
                 )}
               </>
             )}
 
-            {/* ─── Candidate panel ─── */}
+            {/* Candidate panel */}
             {type === "candidate" && candidate && (
               <>
                 {panelTab === "overview" && (
@@ -1052,12 +1139,6 @@ function EntityDetailPanel({
                     }}
                   />
                 )}
-                {panelTab === "password" && (
-                  <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5 text-center">
-                    <p className="text-xs font-bold text-slate-400">Password management is not available for candidate profiles.</p>
-                    <p className="text-[10px] text-slate-500 mt-1">Admin can only reset recruiter portal passwords.</p>
-                  </div>
-                )}
               </>
             )}
           </div>
@@ -1067,7 +1148,7 @@ function EntityDetailPanel({
   );
 }
 
-// ——— Entity Overview Sub-Panels ———
+// ─────────────────────────── Detail Sub-Views ───────────────────────────
 
 function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -1083,34 +1164,49 @@ function CompanyOverview({ company, recruiters }: { company: Company; recruiters
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5">
-        <div className="flex items-start gap-4">
-          <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold text-white bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0 shadow-lg shadow-indigo-500/20">
-            {initialsOf(company.name)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h4 className="text-base font-bold">{company.name}</h4>
-              <Badge tone={statusTone(company.status)}>{company.status}</Badge>
+        {/* Header section with Top Right Proof Doc Button */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-4 min-w-0">
+            <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold text-amber-950 bg-gradient-to-br from-amber-500 to-yellow-600 flex-shrink-0 shadow-lg shadow-amber-500/20">
+              {initialsOf(company.name)}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">{company.industry}</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h4 className="text-base font-bold">{company.name}</h4>
+                <Badge tone={statusTone(company.status)}>{company.status}</Badge>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">{company.industry}</p>
+            </div>
           </div>
+
+          {/* Top Right Transparent Blue Download Proof Doc Button */}
+          {company.proofUrl && (
+            <a
+              href={company.proofUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="Download Verification Proof Document"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 hover:text-sky-300 border border-sky-500/20 transition-all flex-shrink-0 shadow-sm"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Proof Doc
+            </a>
+          )}
         </div>
+
         <div className="mt-5 space-y-0.5">
           <InfoItem label="Industry">{company.industry}</InfoItem>
           <InfoItem label="Primary Contact">{company.contact}</InfoItem>
           <InfoItem label="Email">{company.email}</InfoItem>
-          <InfoItem label="Website">{company.website}</InfoItem>
-          <InfoItem label="Location">{company.location}</InfoItem>
-          <InfoItem label="Size">{company.size}</InfoItem>
+          <InfoItem label="Website">{company.website || "—"}</InfoItem>
+          <InfoItem label="Location">{company.location || "—"}</InfoItem>
+          <InfoItem label="Size">{company.size || "—"}</InfoItem>
           <InfoItem label="Registered">{new Date(company.registeredAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}</InfoItem>
           <InfoItem label="Total Applicants">{company.applicantsCount}</InfoItem>
           <InfoItem label="Open Jobs">{company.openJobs}</InfoItem>
           <InfoItem label="Assigned Recruiters">{approvedNames.length === 0 ? <span className="text-slate-500">None</span> : approvedNames.join(", ")}</InfoItem>
-          {company.proofUrl && (
-            <InfoItem label="Proof Document">
-              <a href={company.proofUrl} target="_blank" rel="noreferrer" className="text-violet-400 hover:underline">Download PDF</a>
-            </InfoItem>
-          )}
         </div>
       </div>
 
@@ -1125,7 +1221,7 @@ function CompanyOverview({ company, recruiters }: { company: Company; recruiters
         </div>
         <div className="rounded-xl border border-slate-800/60 bg-slate-900/60 p-3 text-center">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Size</p>
-          <p className="text-base font-extrabold mt-1.5 text-slate-300">{company.size.split(" ")[0]}</p>
+          <p className="text-base font-extrabold mt-1.5 text-slate-300">{company.size.split(" ")[0] || "—"}</p>
         </div>
       </div>
     </div>
@@ -1143,7 +1239,7 @@ function CompanyEditForm({ edit, setEdit, editSave, onSave }: { edit: Record<str
         <input
           value={edit.name ?? ""}
           onChange={(e) => setEdit({ ...edit, name: e.target.value })}
-          className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-950/60 border border-slate-700/60 text-slate-100 outline-none focus:border-violet-500 transition-all"
+          className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-950/60 border border-slate-700/60 text-slate-100 outline-none focus:border-amber-500 transition-all"
         />
       </div>
       <SelectFieldShim
@@ -1171,7 +1267,7 @@ function CompanyEditForm({ edit, setEdit, editSave, onSave }: { edit: Record<str
         onChange={(v) => setEdit({ ...edit, status: v })}
       />
       <div className="flex gap-2 pt-2">
-        <button onClick={onSave} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-lg shadow-violet-500/25 transition-all">
+        <button onClick={onSave} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 shadow-lg shadow-amber-500/25 transition-all cursor-pointer">
           Save Changes
         </button>
       </div>
@@ -1190,7 +1286,7 @@ function RecruiterEditForm({ edit, setEdit, editSave, onSave }: { edit: Record<s
       <InputSimple label="Location" value={edit.location ?? ""} onChange={(v) => setEdit({ ...edit, location: v })} />
       <SelectFieldShim label="Status" value={edit.status ?? "Active"} options={["Active", "Pending", "Suspended"]} onChange={(v) => setEdit({ ...edit, status: v })} />
       <div className="flex gap-2 pt-2">
-        <button onClick={onSave} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-lg shadow-violet-500/25 transition-all">
+        <button onClick={onSave} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 shadow-lg shadow-amber-500/25 transition-all cursor-pointer">
           Save Changes
         </button>
       </div>
@@ -1210,7 +1306,7 @@ function CandidateEditForm({ edit, setEdit, editSave, onSave }: { edit: Record<s
       <InputSimple label="Location" value={edit.location ?? ""} onChange={(v) => setEdit({ ...edit, location: v })} />
       <SelectFieldShim label="Status" value={edit.status ?? "Active"} options={["Active", "On Hold", "Rejected"]} onChange={(v) => setEdit({ ...edit, status: v })} />
       <div className="flex gap-2 pt-2">
-        <button onClick={onSave} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-lg shadow-violet-500/25 transition-all">
+        <button onClick={onSave} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 shadow-lg shadow-amber-500/25 transition-all cursor-pointer">
           Save Changes
         </button>
       </div>
@@ -1223,7 +1319,7 @@ function RecruiterOverview({ recruiter }: { recruiter: Recruiter }) {
     <div className="space-y-4">
       <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5">
         <div className="flex items-start gap-4">
-          <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold text-white flex-shrink-0 shadow-lg" style={{ background: recruiter.avatar }}>
+          <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold text-amber-950 flex-shrink-0 shadow-lg" style={{ background: recruiter.avatar }}>
             {initialsOf(recruiter.name)}
           </div>
           <div className="min-w-0 flex-1">
@@ -1247,24 +1343,9 @@ function RecruiterOverview({ recruiter }: { recruiter: Recruiter }) {
           <InfoItem label="Client Companies">
             {recruiter.assignedCompanyIds.length === 0
               ? <span className="text-slate-500">None</span>
-              : recruiter.assignedCompanyIds.map((cid) => `CMP-${cid.split("-")[1]}`).join(", ")
+              : recruiter.assignedCompanyIds.map((cid) => `CMP-${cid.split("-")[1] ?? cid}`).join(", ")
             }
           </InfoItem>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl border border-slate-800/60 bg-slate-900/60 p-3 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Source Rate</p>
-          <p className="text-xl font-extrabold mt-1">82%</p>
-        </div>
-        <div className="rounded-xl border border-slate-800/60 bg-slate-900/60 p-3 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Hire Rate</p>
-          <p className="text-xl font-extrabold mt-1">68%</p>
-        </div>
-        <div className="rounded-xl border border-slate-800/60 bg-slate-900/60 p-3 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Placed</p>
-          <p className="text-xl font-extrabold mt-1">34</p>
         </div>
       </div>
     </div>
@@ -1276,7 +1357,7 @@ function CandidateOverview({ candidate }: { candidate: any }) {
     <div className="space-y-4">
       <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5">
         <div className="flex items-start gap-4">
-          <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold text-white flex-shrink-0 shadow-md" style={{ background: candidate.avatar }}>
+          <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold text-amber-950 flex-shrink-0 shadow-md" style={{ background: candidate.avatar }}>
             {initialsOf(candidate.name)}
           </div>
           <div className="min-w-0 flex-1">
@@ -1312,7 +1393,6 @@ function CompanyAccess({
 }: {
   company: Company; recruiters: Recruiter[]; assignedRecruiterIds: string[];
   onAssign: (rid: string) => void; onUnassign: (rid: string) => void;
-  companies?: Company[];
 }) {
   const assigned = recruiters.filter((r) => assignedRecruiterIds.includes(r.id));
   const available = recruiters.filter((r) => r.status === "Active" && !assignedRecruiterIds.includes(r.id));
@@ -1327,14 +1407,14 @@ function CompanyAccess({
           <div className="space-y-2">
             {assigned.map((r) => (
               <div key={r.id} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-800/60">
-                <div className="h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: r.avatar }}>
+                <div className="h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold text-amber-950 flex-shrink-0" style={{ background: r.avatar }}>
                   {initialsOf(r.name)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold">{r.name}</p>
                   <p className="text-[10px] text-slate-500">{r.email}</p>
                 </div>
-                <button onClick={() => onUnassign(r.id)} className="h-7 w-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-red-500/20 hover:text-red-300 transition-all">
+                <button onClick={() => onUnassign(r.id)} className="h-7 w-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer">
                   <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -1352,16 +1432,16 @@ function CompanyAccess({
               <button
                 key={r.id}
                 onClick={() => onAssign(r.id)}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left bg-slate-900/40 border border-slate-700/40 hover:bg-slate-800/60 hover:border-slate-600 transition-all"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left bg-slate-900/40 border border-slate-700/40 hover:bg-slate-800/60 hover:border-slate-600 transition-all cursor-pointer"
               >
-                <div className="h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: r.avatar }}>
+                <div className="h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold text-amber-950 flex-shrink-0" style={{ background: r.avatar }}>
                   {initialsOf(r.name)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold">{r.name}</p>
                   <p className="text-[10px] text-slate-500">{r.role}</p>
                 </div>
-                <span className="text-[10px] font-bold text-sky-400">+ Assign</span>
+                <span className="text-[10px] font-bold text-amber-400">+ Assign</span>
               </button>
             ))}
           </div>
@@ -1390,12 +1470,12 @@ function RecruiterAccess({
           <div className="space-y-2">
             {assigned.map((c) => (
               <div key={c.id} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-800/60">
-                <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0">{initialsOf(c.name)}</div>
+                <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold text-amber-950 bg-gradient-to-br from-amber-500 to-yellow-600 flex-shrink-0">{initialsOf(c.name)}</div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold">{c.name}</p>
                   <p className="text-[10px] text-slate-500">{c.industry}</p>
                 </div>
-                <button onClick={() => onUnassign(c.id)} className="h-7 w-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-red-500/20 hover:text-red-300 transition-all">
+                <button onClick={() => onUnassign(c.id)} className="h-7 w-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer">
                   <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -1413,14 +1493,14 @@ function RecruiterAccess({
               <button
                 key={c.id}
                 onClick={() => onAssign(c.id)}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left bg-slate-900/40 border border-slate-700/40 hover:bg-slate-800/60 hover:border-slate-600 transition-all"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left bg-slate-900/40 border border-slate-700/40 hover:bg-slate-800/60 hover:border-slate-600 transition-all cursor-pointer"
               >
-                <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0">{initialsOf(c.name)}</div>
+                <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold text-amber-950 bg-gradient-to-br from-amber-500 to-yellow-600 flex-shrink-0">{initialsOf(c.name)}</div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold">{c.name}</p>
                   <p className="text-[10px] text-slate-500">{c.industry}</p>
                 </div>
-                <span className="text-[10px] font-bold text-sky-400">+ Assign</span>
+                <span className="text-[10px] font-bold text-amber-400">+ Assign</span>
               </button>
             ))}
           </div>
@@ -1436,7 +1516,6 @@ function CandidateAccess({
   candidate: any; recruiters: Recruiter[]; companies: Company[];
   onAssign: (companyId: string) => void;
 }) {
-  // Map candidate to recruiter via department to suggest fit
   const mappedRecruiter = recruiters.find((r) => r.assignedCompanyIds.length > 0);
   const mappedCompany = mappedRecruiter ? companies.find((c) => c.id === mappedRecruiter.assignedCompanyIds[0]) : undefined;
 
@@ -1447,18 +1526,15 @@ function CandidateAccess({
         {mappedRecruiter && mappedCompany ? (
           <div className="space-y-3">
             <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/60">
-              <div className="h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: mappedRecruiter.avatar }}>
-                {mappedRecruiter.name.split(" ").map((n) => n[0]).join("")}
+              <div className="h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold text-amber-950 flex-shrink-0" style={{ background: mappedRecruiter.avatar }}>
+                {initialsOf(mappedRecruiter.name)}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-slate-400">Recruiter Connection</p>
                 <p className="text-sm font-extrabold">{mappedRecruiter.name}</p>
-                <p className="text-[10px] text-sky-400 mt-0.5">Connected via {mappedCompany.name}</p>
+                <p className="text-[10px] text-amber-400 mt-0.5">Connected via {mappedCompany.name}</p>
               </div>
               <Badge tone={statusTone(candidate.status === "On Hold" ? "Pending" : candidate.status)}>{candidate.status}</Badge>
-            </div>
-            <div className="flex items-center gap-2 justify-center text-slate-500">
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
             </div>
           </div>
         ) : (
@@ -1474,9 +1550,9 @@ function CandidateAccess({
             <button
               key={c.id}
               onClick={() => onAssign(c.id)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left bg-slate-900/40 border border-slate-700/40 hover:bg-slate-800/60 hover:border-slate-600 transition-all"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left bg-slate-900/40 border border-slate-700/40 hover:bg-slate-800/60 hover:border-slate-600 transition-all cursor-pointer"
             >
-              <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0">{initialsOf(c.name)}</div>
+              <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold text-amber-950 bg-gradient-to-br from-amber-500 to-yellow-600 flex-shrink-0">{initialsOf(c.name)}</div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold">{c.name}</p>
                 <p className="text-[10px] text-slate-500">{c.industry}</p>
@@ -1489,7 +1565,6 @@ function CandidateAccess({
   );
 }
 
-// ─── Password panel ───
 function PasswordPanel({
   pw, setPw, pwSuccess, onSubmit, title, desc,
 }: {
@@ -1503,7 +1578,7 @@ function PasswordPanel({
     <div className="space-y-5">
       <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 p-5">
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-11 w-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/25 flex-shrink-0">
+          <div className="h-11 w-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-amber-500 to-yellow-600 text-amber-950 shadow-lg shadow-amber-500/25 flex-shrink-0 font-bold">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
@@ -1517,7 +1592,7 @@ function PasswordPanel({
         {pwSuccess && (
           <div className="mb-4 rounded-lg px-3 py-2.5 text-xs font-medium flex items-start gap-2 bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30">
             <svg viewBox="0 0 24 24" className="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-            A verification email with a link to finalize the password change has been sent.
+            Password reset request completed successfully.
           </div>
         )}
 
@@ -1526,16 +1601,11 @@ function PasswordPanel({
           <PwField label="Confirm Password" value={pw.confirm} onChange={(v) => setPw({ ...pw, confirm: v })} placeholder="Repeat new password" />
           <button
             type="submit"
-            className="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-lg shadow-violet-500/25 transition-all"
+            className="w-full py-2.5 rounded-xl text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 shadow-lg shadow-amber-500/25 transition-all cursor-pointer"
           >
             Reset Portal Password
           </button>
         </form>
-      </div>
-
-      <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 text-[11px] leading-relaxed text-slate-400">
-        <p className="font-bold text-violet-300 mb-1">Security Tip</p>
-        A strong password contains letters, numbers, and symbols. Rotating credentials every 90 days helps reduce account takeover risk.
       </div>
     </div>
   );
@@ -1555,9 +1625,9 @@ function PwField({ label, value, onChange, placeholder }: { label: string; value
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full bg-slate-900/80 border border-slate-700/60 rounded-xl pl-10 pr-14 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/20"
+          className="w-full bg-slate-900/80 border border-slate-700/60 rounded-xl pl-10 pr-14 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20"
         />
-        <button type="button" onClick={() => setShow(!show)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors">
+        <button type="button" onClick={() => setShow(!show)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors cursor-pointer">
           {show ? "Hide" : "Show"}
         </button>
       </div>
@@ -1565,7 +1635,6 @@ function PwField({ label, value, onChange, placeholder }: { label: string; value
   );
 }
 
-// ─────────────────────────── Shared Helpers ───────────────────────────
 function SaveOk() {
   return (
     <div className="mb-4 rounded-xl px-3 py-2.5 text-xs font-bold flex items-center gap-2 bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30 animate-fadeIn">
@@ -1583,7 +1652,7 @@ function InputSimple({ label, value, type = "text", onChange }: { label: string;
         value={value}
         onChange={(e) => onChange(e.target.value)}
         type={type}
-        className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-950/60 border border-slate-700/60 text-slate-100 placeholder-slate-500 outline-none focus:border-violet-500 transition-all"
+        className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-950/60 border border-slate-700/60 text-slate-100 placeholder-slate-500 outline-none focus:border-amber-500 transition-all"
       />
     </div>
   );
@@ -1596,7 +1665,7 @@ function SelectFieldShim({ label, value, options, onChange }: { label: string; v
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-950/60 border border-slate-700/60 text-slate-100 outline-none cursor-pointer focus:border-violet-500 transition-all"
+        className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-950/60 border border-slate-700/60 text-slate-100 outline-none cursor-pointer focus:border-amber-500 transition-all"
       >
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>

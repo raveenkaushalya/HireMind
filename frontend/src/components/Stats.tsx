@@ -2,9 +2,9 @@ import { useTheme } from '../context/ThemeContext';
 import { useEffect, useRef, useState } from 'react';
 
 const stats = [
-  { value: '2M+', label: 'Active Candidates', description: 'Verified professionals' },
-  { value: '10K+', label: 'Companies', description: 'Trust our platform' },
-  { value: '500K+', label: 'Jobs Matched', description: 'By our AI engine' },
+  { value: '7000+', label: 'Active Candidates', description: 'Verified professionals' },
+  { value: '800+', label: 'Companies', description: 'Trust our platform' },
+  { value: '10K+', label: 'Jobs Matched', description: 'By our AI engine' },
   { value: '96%', label: 'Match Accuracy', description: 'AI-powered precision' },
 ];
 

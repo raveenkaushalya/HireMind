@@ -5,9 +5,9 @@ import { useAuth } from "../../../context/AuthContext";
 interface JobOpening {
   id: string;
   title: string;
-  department: string;
+  category: string;
   location: string;
-  type: "Full-time" | "Part-time" | "Contract" | "Internship";
+  type: "Full-time" | "Part-time" | "Remote" | "Hybrid" | "Onsite";
   level: "Junior" | "Mid" | "Senior" | "Lead" | "Principal";
   status: "Open" | "On Hold" | "Closed" | "Draft";
   applicants: number;
@@ -17,11 +17,19 @@ interface JobOpening {
   postedAt: string;
   closingAt: string;
   salary: string;
-  description: string;
+  descriptionAboutTheRole: string;
+  responsibilities: string;
+  requirements: string;
+  descriptionAboutTheCompany: string;
   urgent?: boolean;
+  yearsOfExperienceNeeded?: string;
+  minQualification?: string;
+  skillsNeeded: string[];
 }
 
-const SEED_JOBS: JobOpening[] = []; // Cleared mock data to use live API
+
+
+const SEED_JOBS: JobOpening[] = [];
 
 const STATUS_STYLES: Record<JobOpening["status"], string> = {
   Open: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 ring-1 ring-inset ring-emerald-500/30",
@@ -30,7 +38,7 @@ const STATUS_STYLES: Record<JobOpening["status"], string> = {
   Draft: "bg-violet-500/15 text-violet-600 dark:text-violet-300 ring-1 ring-inset ring-violet-500/30",
 };
 
-const TYPE_OPTIONS = ["All", "Full-time", "Part-time", "Contract", "Internship"];
+const TYPE_OPTIONS = ["All", "Full-time", "Part-time", "Remote", "Hybrid", "Onsite"];
 const STATUS_OPTIONS = ["All", "Open", "On Hold", "Closed", "Draft"];
 
 interface Props {
@@ -41,35 +49,62 @@ interface Props {
 export default function JobOpenings({ dark, onViewProfile }: Props) {
   const { token } = useAuth();
   const [jobs, setJobs] = useState<JobOpening[]>(SEED_JOBS);
+  const [companyId, setCompanyId] = useState<number | null>(null);
 
+  const mapApiJob = (j: any): JobOpening => ({
+    id: `JOB-${j.id}`,
+    title: j.title || 'Untitled',
+    category: j.category || 'IT / Technology',
+    location: j.location || 'Colombo, Sri Lanka',
+    type: (j.type as any) || 'Full-time',
+    level: 'Mid',
+    status: (j.status as any) || 'Open',
+    applicants: j.applicants || 0,
+    shortlisted: 0,
+    inInterview: 0,
+    offers: 0,
+    postedAt: j.postedDate ? j.postedDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    closingAt: j.closingDate ? j.closingDate.slice(0, 10) : '',
+    salary: j.salaryRange || '',
+    descriptionAboutTheRole: j.descriptionAboutTheRole || j.description || '',
+    responsibilities: j.responsibilities || '',
+    requirements: j.requirements || '',
+    descriptionAboutTheCompany: j.descriptionAboutTheCompany || '',
+    urgent: false,
+    yearsOfExperienceNeeded: j.yearsOfExperienceNeeded || '',
+    minQualification: j.minQualification || '',
+    skillsNeeded: j.skillsNeeded ? j.skillsNeeded.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+  });
+
+  // Step 1: Fetch HM's profile to get their company ID
   useEffect(() => {
-    fetch('/api/jobs')
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          const apiJobs: JobOpening[] = data.map(j => ({
-            id: `JOB-${j.id}`,
-            title: j.title || 'Untitled',
-            department: j.category || 'Engineering',
-            location: j.location || 'Remote',
-            type: (j.type as any) || 'Full-time',
-            level: 'Mid',
-            status: (j.status as any) || 'Open',
-            applicants: j.applicants || 0,
-            shortlisted: 0,
-            inInterview: 0,
-            offers: 0,
-            postedAt: j.postedDate || new Date().toISOString().slice(0, 10),
-            closingAt: j.closingDate || "",
-            salary: j.salaryRange || "",
-            description: j.descriptionAboutTheRole || j.description || "",
-            urgent: false
-          }));
-          setJobs(apiJobs.reverse());
+    if (!token) return;
+    fetch('/api/hiring-managers/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(profile => {
+        if (profile?.companyId) {
+          setCompanyId(profile.companyId);
         }
       })
       .catch(console.error);
-  }, []);
+  }, [token]);
+
+  // Step 2: Fetch jobs for this company once we have the companyId
+  useEffect(() => {
+    if (companyId === null) return;
+    fetch(`/api/jobs/by-company/${companyId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setJobs(data.map(mapApiJob).reverse());
+        }
+      })
+      .catch(console.error);
+  }, [companyId]);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("All");
@@ -77,18 +112,26 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [viewingJob, setViewingJob] = useState<JobOpening | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [skillInput, setSkillInput] = useState("");
+
   const [form, setForm] = useState<Omit<JobOpening, "id" | "applicants" | "shortlisted" | "inInterview" | "offers">>({
     title: "",
-    department: "Engineering",
-    location: "Remote · US",
+    category: "IT / Technology",
+    location: "Colombo, Sri Lanka",
     type: "Full-time",
     level: "Mid",
     status: "Draft",
     postedAt: new Date().toISOString().slice(0, 10),
     closingAt: "",
     salary: "",
-    description: "",
+    descriptionAboutTheRole: "",
+    responsibilities: "",
+    requirements: "",
+    descriptionAboutTheCompany: "",
     urgent: false,
+    yearsOfExperienceNeeded: "",
+    minQualification: "",
+    skillsNeeded: [],
   });
 
   // Applicants view state
@@ -97,14 +140,12 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
   const [applicantSortDir, setApplicantSortDir] = useState<"asc" | "desc">("desc");
   const [applicantStageFilter, setApplicantStageFilter] = useState<string>("All");
 
-  // Mock applicants for the specific job (dept-matched pool)
   const jobApplicantsPool = useMemo(() => {
     if (!viewingJob) return [];
-    const matches = CANDIDATES.filter(c => c.department === viewingJob.department);
+    const matches = CANDIDATES.filter(c => c.location === viewingJob.location);
     return matches.length > 0 ? matches.slice(0, viewingJob.applicants) : CANDIDATES.slice(0, viewingJob.applicants);
   }, [viewingJob]);
 
-  // Filtered + sorted applicants for display
   const jobApplicants = useMemo(() => {
     let list = [...jobApplicantsPool];
     if (applicantStageFilter !== "All") list = list.filter(c => c.stage === applicantStageFilter);
@@ -128,7 +169,6 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
     return list;
   }, [jobApplicantsPool, applicantSearch, applicantSortBy, applicantSortDir, applicantStageFilter]);
 
-  // Applicant stage summary
   const applicantStats = useMemo(() => {
     const stats = { total: jobApplicantsPool.length, shortlisted: 0, inInterview: 0, offer: 0, avgScore: 0 };
     if (jobApplicantsPool.length === 0) return stats;
@@ -148,15 +188,13 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
       if (statusFilter !== "All" && j.status !== statusFilter) return false;
       if (search) {
         const s = search.toLowerCase();
-        return j.title.toLowerCase().includes(s) || j.department.toLowerCase().includes(s) || j.location.toLowerCase().includes(s);
+        return j.title.toLowerCase().includes(s) || j.location.toLowerCase().includes(s);
       }
       return true;
     });
-    // Urgent jobs always surface first
     return [...list].sort((a, b) => Number(b.urgent ?? false) - Number(a.urgent ?? false));
   }, [jobs, typeFilter, statusFilter, search]);
 
-  // Summary metrics
   const summary = useMemo(() => {
     const open = jobs.filter((j) => j.status === "Open").length;
     const onHold = jobs.filter((j) => j.status === "On Hold").length;
@@ -170,31 +208,43 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
       setEditingId(job.id);
       setForm({
         title: job.title,
-        department: job.department,
-        location: job.location,
+        category: job.category || "IT / Technology",
+        location: (job as any).location || "Colombo, Sri Lanka",
         type: job.type,
         level: job.level,
         status: job.status,
         postedAt: job.postedAt,
         closingAt: job.closingAt,
         salary: job.salary,
-        description: job.description,
+        descriptionAboutTheRole: job.descriptionAboutTheRole,
+        responsibilities: job.responsibilities,
+        requirements: job.requirements,
+        descriptionAboutTheCompany: job.descriptionAboutTheCompany,
         urgent: job.urgent ?? false,
+        yearsOfExperienceNeeded: job.yearsOfExperienceNeeded || "",
+        minQualification: job.minQualification || "",
+        skillsNeeded: job.skillsNeeded || [],
       });
     } else {
       setEditingId(null);
       setForm({
         title: "",
-        department: "Engineering",
-        location: "Remote · US",
+        category: "IT / Technology",
+        location: "Colombo, Sri Lanka",
         type: "Full-time",
         level: "Mid",
         status: "Draft",
         postedAt: new Date().toISOString().slice(0, 10),
         closingAt: "",
         salary: "",
-        description: "",
+        descriptionAboutTheRole: "",
+        responsibilities: "",
+        requirements: "",
+        descriptionAboutTheCompany: "",
         urgent: false,
+        yearsOfExperienceNeeded: "",
+        minQualification: "",
+        skillsNeeded: [],
       });
     }
     setShowForm(true);
@@ -203,6 +253,11 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
   const saveJob = async () => {
     if (!form.title.trim()) return;
 
+    if (!companyId) {
+      alert('Unable to determine your company. Please refresh and try again.');
+      return;
+    }
+
     try {
       const isEdit = !!editingId;
       const url = isEdit ? `/api/jobs/${editingId.replace('JOB-', '')}` : `/api/jobs`;
@@ -210,16 +265,20 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
 
       const payload = {
         title: form.title,
-        description: form.description,
-        requiredSkills: "",
+        category: form.category,
         location: form.location,
+        skillsNeeded: form.skillsNeeded.join(", "),
         salaryRange: form.salary,
         type: form.type,
-        companyId: 1, // Defaulting to 1 for HM since company context is simplified in this flow
+        companyId: companyId,
         closingDate: form.closingAt ? new Date(form.closingAt).toISOString() : null,
-        descriptionAboutTheCompany: "",
-        responsibilities: "",
-        requirements: ""
+        descriptionAboutTheRole: form.descriptionAboutTheRole,
+        responsibilities: form.responsibilities,
+        requirements: form.requirements,
+        descriptionAboutTheCompany: form.descriptionAboutTheCompany,
+        yearsOfExperienceNeeded: form.yearsOfExperienceNeeded,
+        minQualification: form.minQualification,
+        status: form.status,
       };
 
       const res = await fetch(url, {
@@ -231,14 +290,16 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
         body: JSON.stringify(payload)
       });
 
-      if (!res.ok) throw new Error("Failed to save job");
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Failed to save job: ${res.status} ${errText}`);
+      }
       const savedJob = await res.json();
 
       const newJob: JobOpening = {
         id: `JOB-${savedJob.id}`,
         title: savedJob.title,
-        department: savedJob.category || form.department,
-        location: savedJob.location,
+        location: savedJob.category || form.location,
         type: savedJob.type as any,
         level: form.level,
         status: savedJob.status || "Open",
@@ -246,11 +307,17 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
         shortlisted: 0,
         inInterview: 0,
         offers: 0,
-        postedAt: savedJob.postedDate || new Date().toISOString().slice(0, 10),
+        postedAt: savedJob.postedDate ? savedJob.postedDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
         closingAt: form.closingAt,
         salary: savedJob.salaryRange || "",
-        description: savedJob.descriptionAboutTheRole || form.description,
-        urgent: form.urgent
+        descriptionAboutTheRole: savedJob.descriptionAboutTheRole || form.descriptionAboutTheRole,
+        responsibilities: savedJob.responsibilities || form.responsibilities,
+        requirements: savedJob.requirements || form.requirements,
+        descriptionAboutTheCompany: savedJob.descriptionAboutTheCompany || form.descriptionAboutTheCompany,
+        urgent: form.urgent,
+        yearsOfExperienceNeeded: savedJob.yearsOfExperienceNeeded || form.yearsOfExperienceNeeded,
+        minQualification: savedJob.minQualification || form.minQualification,
+        skillsNeeded: savedJob.skillsNeeded ? savedJob.skillsNeeded.split(',').map((s: string) => s.trim()).filter(Boolean) : form.skillsNeeded,
       };
 
       if (isEdit) {
@@ -261,26 +328,46 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
       setShowForm(false);
     } catch (e) {
       console.error(e);
-      // Fallback
-      if (editingId) {
-        setJobs((prev) => prev.map((j) => (j.id === editingId ? { ...j, ...form } : j)));
-      } else {
-        const newJob: JobOpening = {
-          id: `JOB-${Math.floor(1043 + Math.random() * 1000)}`,
-          applicants: 0, shortlisted: 0, inInterview: 0, offers: 0, ...form,
-        };
-        setJobs((prev) => [newJob, ...prev]);
-      }
+      alert(`Error saving job: ${e instanceof Error ? e.message : String(e)}`);
       setShowForm(false);
     }
   };
 
-  const closeJob = (id: string) => {
-    setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, status: "Closed" } : j)));
+  const closeJob = async (id: string) => {
+    const numericId = id.replace('JOB-', '');
+    try {
+      const res = await fetch(`/api/jobs/${numericId}`, {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      if (res.ok) {
+        setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, status: "Closed" } : j)));
+      }
+    } catch (e) {
+      console.error("Failed to close job", e);
+    }
   };
 
-  const toggleStatus = (id: string) => {
-    setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, status: j.status === "Open" ? "On Hold" : "Open" } : j)));
+  const toggleStatus = async (job: JobOpening) => {
+    const numericId = job.id.replace('JOB-', '');
+    const newStatus = job.status === "Open" ? "On Hold" : "Open";
+    try {
+      const res = await fetch(`/api/jobs/${numericId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(newStatus) // .NET requires JSON strings in quotes for [FromBody] string => e.g. '"Closed"'
+      });
+      if (res.ok) {
+        setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: newStatus } : j)));
+      }
+    } catch (e) {
+      console.error("Failed to toggle status", e);
+    }
   };
 
   return (
@@ -289,7 +376,6 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
       {viewingJob && (
         <div className={`absolute inset-0 z-20 min-h-full animate-fadeIn ${dark ? "bg-slate-950" : "bg-[#f4f6fb]"}`}>
           <div className="space-y-5 pb-6">
-            {/* Header: Back button + Job hero */}
             <button
               onClick={() => setViewingJob(null)}
               className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-900" : "text-slate-500 hover:text-slate-900 hover:bg-white shadow-sm"
@@ -301,9 +387,8 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
               Back to Jobs
             </button>
 
-            {/* Job hero card */}
             <div className={`relative overflow-hidden rounded-2xl border p-6 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
-              <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full blur-3xl opacity-20 bg-indigo-500" />
+              <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full blur-3xl opacity-20 bg-amber-500" />
               <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -324,15 +409,14 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                   </div>
                   <h1 className="text-2xl font-extrabold tracking-tight">{viewingJob.title}</h1>
                   <p className={`text-sm mt-1 ${dark ? "text-slate-400" : "text-slate-500"}`}>
-                    {viewingJob.department} · {viewingJob.location} · {viewingJob.type} · {viewingJob.level}
+                    {viewingJob.location} · {viewingJob.type} · {viewingJob.level}
                   </p>
                 </div>
               </div>
 
-              {/* Inline stats strip */}
               <div className={`relative mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t ${dark ? "border-slate-800" : "border-slate-100"}`}>
                 {[
-                  { label: "Total Applicants", value: applicantStats.total, color: "#6366f1" },
+                  { label: "Total Applicants", value: applicantStats.total, color: "#eab308" },
                   { label: "Shortlisted", value: applicantStats.shortlisted, color: "#8b5cf6" },
                   { label: "In Interview", value: applicantStats.inInterview, color: "#0ea5e9" },
                   { label: "Avg Score", value: `${applicantStats.avgScore}`, suffix: "/100", color: "#10b981" },
@@ -348,7 +432,6 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
               </div>
             </div>
 
-            {/* Toolbar: search + stage filter + sort */}
             <div className={`rounded-2xl border p-3 flex flex-wrap items-center gap-2 ${dark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
               <div className="relative flex-1 min-w-[220px]">
                 <svg viewBox="0 0 24 24" className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${dark ? "text-slate-500" : "text-slate-400"}`} fill="none" stroke="currentColor" strokeWidth="2">
@@ -359,14 +442,14 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                   value={applicantSearch}
                   onChange={(e) => setApplicantSearch(e.target.value)}
                   placeholder="Search applicants by name, location, role, stage…"
-                  className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none transition-colors ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:border-indigo-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500"}`}
+                  className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none transition-colors ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:border-amber-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-amber-500"}`}
                 />
               </div>
 
               <select
                 value={applicantStageFilter}
                 onChange={(e) => setApplicantStageFilter(e.target.value)}
-                className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 focus:border-indigo-500" : "bg-white border border-slate-200 text-slate-900 focus:border-indigo-500"}`}
+                className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 focus:border-amber-500" : "bg-white border border-slate-200 text-slate-900 focus:border-amber-500"}`}
               >
                 {["All", "Shortlisted", "Phone Screen", "Technical", "Onsite", "Offer", "Hired", "Rejected"].map((s) => (
                   <option key={s} value={s}>{s === "All" ? "All Stages" : s}</option>
@@ -376,7 +459,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
               <select
                 value={applicantSortBy}
                 onChange={(e) => setApplicantSortBy(e.target.value as typeof applicantSortBy)}
-                className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 focus:border-indigo-500" : "bg-white border border-slate-200 text-slate-900 focus:border-indigo-500"}`}
+                className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 focus:border-amber-500" : "bg-white border border-slate-200 text-slate-900 focus:border-amber-500"}`}
               >
                 <option value="score">Sort: Score</option>
                 <option value="yearsExp">Sort: Experience</option>
@@ -402,7 +485,6 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
               </button>
             </div>
 
-            {/* Applicants list — grid of candidate cards */}
             {jobApplicants.length === 0 ? (
               <div className={`rounded-2xl border p-10 text-center text-sm ${dark ? "bg-slate-900/60 border-slate-800 text-slate-500" : "bg-white border-slate-200 text-slate-400"}`}>
                 No applicants match your filters.
@@ -414,7 +496,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                     c.stage === "Hired" ? "#10b981" :
                       c.stage === "Offer" ? "#f59e0b" :
                         c.stage === "Onsite" ? "#8b5cf6" :
-                          c.stage === "Technical" ? "#6366f1" :
+                          c.stage === "Technical" ? "#ca8a04" :
                             c.stage === "Phone Screen" ? "#0ea5e9" :
                               c.stage === "Rejected" ? "#ef4444" : "#64748b";
                   return (
@@ -440,7 +522,6 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                           </div>
                         </div>
 
-                        {/* Stage + Exp */}
                         <div className="mt-3 flex items-center gap-2 flex-wrap">
                           <span
                             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
@@ -457,10 +538,9 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                           </span>
                         </div>
 
-                        {/* View Profile CTA */}
                         <button
                           onClick={() => onViewProfile?.(c)}
-                          className={`mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${dark ? "bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25" : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                          className={`mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${dark ? "bg-amber-500/15 text-amber-300 hover:bg-amber-500/25" : "bg-amber-50 text-amber-800 hover:bg-amber-100"
                             }`}
                         >
                           <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -484,7 +564,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
         {[
           { label: "Open Jobs", value: summary.open, color: "#10b981", icon: <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
           { label: "On Hold", value: summary.onHold, color: "#f59e0b", icon: <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
-          { label: "Total Applicants", value: summary.totalApplicants.toLocaleString(), color: "#6366f1", icon: <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5 5 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+          { label: "Total Applicants", value: summary.totalApplicants.toLocaleString(), color: "#eab308", icon: <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5 5 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
           { label: "Offers Extended", value: summary.totalOffers, color: "#8b5cf6", icon: <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg> },
         ].map((kpi) => (
           <div key={kpi.label} className={`relative overflow-hidden rounded-2xl border p-5 transition-all hover:shadow-xl ${dark ? "bg-slate-900/70 border-slate-800 hover:border-slate-700" : "bg-white border-slate-200/70 hover:border-slate-300 shadow-sm"}`}>
@@ -512,16 +592,16 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by title, department, or location…"
-            className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none transition-colors ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:border-indigo-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500"}`}
+            placeholder="Search by title or department…"
+            className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none transition-colors ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:border-amber-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-amber-500"}`}
           />
         </div>
 
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 focus:border-indigo-500" : "bg-white border border-slate-200 text-slate-900 focus:border-indigo-500"}`}>
+        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 focus:border-amber-500" : "bg-white border border-slate-200 text-slate-900 focus:border-amber-500"}`}>
           {TYPE_OPTIONS.map((o) => <option key={o} value={o}>{o === "All" ? "All Types" : o}</option>)}
         </select>
 
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 focus:border-indigo-500" : "bg-white border border-slate-200 text-slate-900 focus:border-indigo-500"}`}>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 focus:border-amber-500" : "bg-white border border-slate-200 text-slate-900 focus:border-amber-500"}`}>
           {STATUS_OPTIONS.map((o) => <option key={o} value={o}>{o === "All" ? "All Status" : o}</option>)}
         </select>
 
@@ -534,7 +614,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
 
         <button
           onClick={() => openForm()}
-          className={`ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm ${dark ? "bg-indigo-500 text-white hover:bg-indigo-600" : "bg-indigo-500 text-white hover:bg-indigo-600"}`}
+          className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm bg-amber-500 text-slate-950 hover:bg-amber-600"
         >
           <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -566,10 +646,10 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                 </div>
                 <h3 className="mt-1.5 text-base font-bold leading-tight">{job.title}</h3>
                 <p className={`mt-0.5 text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>
-                  {job.department} · {job.location}
+                  {job.location}
                 </p>
               </div>
-              {/* Text action buttons: Edit / Pause|Resume / Close */}
+
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <button
                   onClick={() => openForm(job)}
@@ -581,7 +661,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                   Edit
                 </button>
                 <button
-                  onClick={() => toggleStatus(job.id)}
+                  onClick={() => toggleStatus(job)}
                   className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${job.status === "Open"
                     ? dark
                       ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
@@ -602,7 +682,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
               </div>
             </div>
 
-            <p className={`mt-3 text-xs leading-relaxed line-clamp-2 ${dark ? "text-slate-400" : "text-slate-600"}`}>{job.description}</p>
+            <p className={`mt-3 text-xs leading-relaxed line-clamp-2 ${dark ? "text-slate-400" : "text-slate-600"}`}>{job.descriptionAboutTheRole}</p>
 
             <div className="mt-4 flex flex-wrap items-center gap-1.5">
               <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${dark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>{job.type}</span>
@@ -612,9 +692,9 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
 
             <div className={`mt-4 pt-4 grid grid-cols-4 gap-2 border-t ${dark ? "border-slate-800" : "border-slate-100"}`}>
               {[
-                { label: "Applicants", value: job.applicants, color: "#6366f1" },
-                { label: "Shortlisted", value: job.shortlisted, color: "#8b5cf6" },
-                { label: "In Interview", value: job.inInterview, color: "#0ea5e9" },
+                { label: "Applicants", value: job.applicants, color: "#eab308" },
+                { label: "Shortlisted", value: job.shortlisted, color: "#ca8a04" },
+                { label: "In Interview", value: job.inInterview, color: "#d97706" },
                 { label: "Offers", value: job.offers, color: "#10b981" },
               ].map((m) => (
                 <button
@@ -634,7 +714,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
               </div>
               <button
                 onClick={() => setViewingJob(job)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${dark ? "bg-slate-800 text-indigo-400 hover:bg-slate-700" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${dark ? "bg-slate-800 text-amber-400 hover:bg-slate-700" : "bg-amber-50 text-amber-800 hover:bg-amber-100"
                   }`}
               >
                 View Applicants
@@ -653,7 +733,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
         )}
       </div>
 
-      {/* Add/Edit modal */}
+      {/* Add / Edit Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowForm(false)} />
@@ -666,26 +746,26 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
             </div>
 
             <div className="p-5 space-y-4">
-              <div>
-                <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Job Title *</label>
-                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Senior Frontend Engineer" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Job Title *</label>
+                  <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Senior Frontend Engineer" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+                </div>
+                <div>
+                  <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Category / Industry</label>
+                  <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="e.g. IT, Healthcare" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Department</label>
-                  <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100" : "bg-white border border-slate-200 text-slate-900"}`}>
-                    {["Engineering", "Design", "Product", "Marketing", "Sales", "Operations", "Data"].map((d) => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-                <div>
                   <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Location</label>
-                  <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Remote · US" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+                  <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Remote, Colombo" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
                 </div>
                 <div>
                   <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Employment Type</label>
                   <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as JobOpening["type"] })} className={`w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100" : "bg-white border border-slate-200 text-slate-900"}`}>
-                    {["Full-time", "Part-time", "Contract", "Internship"].map((t) => <option key={t} value={t}>{t}</option>)}
+                    {["Full-time", "Part-time", "Remote", "Hybrid", "Onsite"].map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
@@ -696,7 +776,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                 </div>
                 <div>
                   <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Salary Range</label>
-                  <input value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} placeholder="$120k – $160k" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+                  <input value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} placeholder="$120k – $160k" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
                 </div>
                 <div>
                   <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Status</label>
@@ -706,20 +786,99 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
                 </div>
                 <div>
                   <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Posted Date</label>
-                  <input type="date" value={form.postedAt} onChange={(e) => setForm({ ...form, postedAt: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100" : "bg-white border border-slate-200 text-slate-900"}`} />
+                  <input type="date" value={form.postedAt} onChange={(e) => setForm({ ...form, postedAt: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100" : "bg-white border border-slate-200 text-slate-900"}`} />
                 </div>
                 <div>
                   <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Closing Date</label>
-                  <input type="date" value={form.closingAt} onChange={(e) => setForm({ ...form, closingAt: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+                  <input type="date" value={form.closingAt} onChange={(e) => setForm({ ...form, closingAt: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100" : "bg-white border border-slate-200 text-slate-900"}`} />
+                </div>
+                <div>
+                  <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Experience Needed (Years)</label>
+                  <input value={form.yearsOfExperienceNeeded} onChange={(e) => setForm({ ...form, yearsOfExperienceNeeded: e.target.value })} placeholder="e.g. 2, 3-5" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+                </div>
+                <div>
+                  <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Min. Qualification (Education)</label>
+                  <input value={form.minQualification} onChange={(e) => setForm({ ...form, minQualification: e.target.value })} placeholder="e.g. Bachelor's in CS" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
                 </div>
               </div>
 
               <div>
-                <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Description</label>
-                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Brief role overview…" className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 resize-none ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+                <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Skills Needed</label>
+                <div className={`w-full p-2 rounded-lg flex flex-wrap gap-2 focus-within:ring-2 focus-within:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800" : "bg-white border border-slate-200"}`}>
+                  {form.skillsNeeded.map((skill) => (
+                    <span key={skill} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium ${dark ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-700"}`}>
+                      {skill}
+                      <button onClick={(e) => { e.preventDefault(); setForm({ ...form, skillsNeeded: form.skillsNeeded.filter(s => s !== skill) }); }} className="text-slate-400 hover:text-red-400">&times;</button>
+                    </span>
+                  ))}
+                  <input
+                    value={skillInput}
+                    onChange={(e) => setSkillInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === ",") {
+                        e.preventDefault();
+                        const val = skillInput.trim();
+                        if (val && !form.skillsNeeded.includes(val)) {
+                          setForm({ ...form, skillsNeeded: [...form.skillsNeeded, val] });
+                        }
+                        setSkillInput("");
+                      }
+                    }}
+                    placeholder="Type a skill and press Enter..."
+                    className={`flex-1 min-w-[150px] bg-transparent outline-none text-sm ${dark ? "text-slate-100 placeholder-slate-500" : "text-slate-900 placeholder-slate-400"}`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Closing Date</label>
+                  <input type="date" value={form.closingAt} onChange={(e) => setForm({ ...form, closingAt: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`} />
+                </div>
               </div>
 
-              {/* Urgent tick */}
+              {/* 4 Text Areas */}
+              <div>
+                <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>About the Role</label>
+                <textarea
+                  value={form.descriptionAboutTheRole}
+                  onChange={(e) => setForm({ ...form, descriptionAboutTheRole: e.target.value })}
+                  rows={3}
+                  placeholder="Describe the scope and objective of the role…"
+                  className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 resize-none ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Responsibilities</label>
+                <textarea
+                  value={form.responsibilities}
+                  onChange={(e) => setForm({ ...form, responsibilities: e.target.value })}
+                  rows={3}
+                  placeholder="Key duties and day-to-day responsibilities…"
+                  className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 resize-none ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>Requirements</label>
+                <textarea
+                  value={form.requirements}
+                  onChange={(e) => setForm({ ...form, requirements: e.target.value })}
+                  rows={3}
+                  placeholder="Skills, qualifications, and experience required…"
+                  className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 resize-none ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs font-semibold mb-1 ${dark ? "text-slate-300" : "text-slate-700"}`}>About the Company</label>
+                <textarea
+                  value={form.descriptionAboutTheCompany}
+                  onChange={(e) => setForm({ ...form, descriptionAboutTheCompany: e.target.value })}
+                  rows={3}
+                  placeholder="Overview of company culture, mission, and benefits…"
+                  className={`w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 resize-none ${dark ? "bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 placeholder-slate-400"}`}
+                />
+              </div>
+
               <label
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${form.urgent
                   ? dark
@@ -770,7 +929,7 @@ export default function JobOpenings({ dark, onViewProfile }: Props) {
               <button onClick={() => setShowForm(false)} className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${dark ? "hover:bg-slate-800 text-slate-300" : "hover:bg-slate-100 text-slate-700"}`}>
                 Cancel
               </button>
-              <button onClick={saveJob} className="px-5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors">
+              <button onClick={saveJob} className="px-5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-slate-950 transition-colors">
                 {editingId ? "Save Changes" : "Create Job"}
               </button>
             </div>

@@ -14,13 +14,15 @@ namespace RecruitmentPlatform.API.Services
         private readonly IUserRepository _userRepo;
         private readonly ICompanyRepository _companyRepo;
         private readonly IRecruiterRepository _recruiterRepo;
+        private readonly IHiringManagerRepository _hiringManagerRepo;
         private readonly IConfiguration _config;
 
-        public AuthService(IUserRepository userRepo, ICompanyRepository companyRepo, IRecruiterRepository recruiterRepo, IConfiguration config)
+        public AuthService(IUserRepository userRepo, ICompanyRepository companyRepo, IRecruiterRepository recruiterRepo, IHiringManagerRepository hiringManagerRepo, IConfiguration config)
         {
             _userRepo = userRepo;
             _companyRepo = companyRepo;
             _recruiterRepo = recruiterRepo;
+            _hiringManagerRepo = hiringManagerRepo;
             _config = config;
         }
 
@@ -120,6 +122,47 @@ namespace RecruitmentPlatform.API.Services
             recruiter.TokenExpiry = null;
             recruiter.Status = "Active";
             await _recruiterRepo.UpdateAsync(recruiter);
+            
+            string jwtToken = GenerateJwtToken(user);
+            return new AuthResponseDto
+            {
+                Token = jwtToken,
+                Role = user.Role,
+                Name = user.FullName ?? string.Empty,
+                UserId = user.Id,
+                Email = user.Email
+            };
+        }
+
+        public async Task<AuthResponseDto> CreateHiringManagerAccountAsync(string token, string password)
+        {
+            var managers = await _hiringManagerRepo.GetAllAsync();
+            var manager = managers.FirstOrDefault(m => m.RegistrationToken == token && m.TokenExpiry > DateTime.UtcNow && m.Status == "Pending");
+            
+            if (manager == null)
+                throw new InvalidOperationException("Invalid or expired token.");
+            if (string.IsNullOrEmpty(manager.Email))
+                throw new InvalidOperationException("Hiring Manager email is not set.");
+                
+            bool exists = await _userRepo.EmailExistsAsync(manager.Email);
+            if (exists)
+                throw new InvalidOperationException("Email already registered for a user account.");
+                
+            var user = new User
+            {
+                FullName = manager.Name,
+                Email = manager.Email,
+                Role = "HiringManager", // Or whatever the role is defined as
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
+            };
+            
+            await _userRepo.AddAsync(user);
+            
+            manager.UserId = user.Id;
+            manager.RegistrationToken = null;
+            manager.TokenExpiry = null;
+            manager.Status = "Active";
+            await _hiringManagerRepo.UpdateAsync(manager);
             
             string jwtToken = GenerateJwtToken(user);
             return new AuthResponseDto

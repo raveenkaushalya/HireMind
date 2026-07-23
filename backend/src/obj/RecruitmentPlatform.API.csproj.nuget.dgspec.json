@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\VICTUS\\Downloads\\src\\RecruitmentPlatform.API.csproj": {}
+    "C:\\xampp\\htdocs\\HireMind\\backend\\src\\RecruitmentPlatform.API.csproj": {}
   },
   "projects": {
-    "C:\\Users\\VICTUS\\Downloads\\src\\RecruitmentPlatform.API.csproj": {
+    "C:\\xampp\\htdocs\\HireMind\\backend\\src\\RecruitmentPlatform.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\VICTUS\\Downloads\\src\\RecruitmentPlatform.API.csproj",
+        "projectUniqueName": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\RecruitmentPlatform.API.csproj",
         "projectName": "RecruitmentPlatform.API",
-        "projectPath": "C:\\Users\\VICTUS\\Downloads\\src\\RecruitmentPlatform.API.csproj",
+        "projectPath": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\RecruitmentPlatform.API.csproj",
         "packagesPath": "C:\\Users\\VICTUS\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\VICTUS\\Downloads\\src\\obj\\",
+        "outputPath": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

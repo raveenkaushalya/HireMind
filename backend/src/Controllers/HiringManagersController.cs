@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentPlatform.API.DTOs.HiringManager;
 using RecruitmentPlatform.API.Services;
+using System.Security.Claims;
 
 namespace RecruitmentPlatform.API.Controllers
 {
@@ -18,6 +19,18 @@ namespace RecruitmentPlatform.API.Controllers
         {
             var managers = await _service.GetAllAsync();
             return Ok(managers);
+        }
+
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetMe()
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out int userId))
+                return Unauthorized();
+
+            var manager = await _service.GetByUserIdAsync(userId);
+            return manager == null ? NotFound() : Ok(manager);
         }
 
         [HttpGet("{id}")]

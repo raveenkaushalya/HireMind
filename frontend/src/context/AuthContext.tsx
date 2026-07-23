@@ -60,17 +60,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const path = window.location.pathname;
     const searchParams = new window.URLSearchParams(window.location.search);
     const companySetupToken = searchParams.get('companySetupToken');
+    const recruiterSetupToken = searchParams.get('recruiterSetupToken');
+    const hiringManagerSetupToken = searchParams.get('hiringManagerSetupToken');
 
     if (storedToken && storedName && storedRole && storedUserId) {
-      setToken(storedToken);
-      setUsername(storedName);
-      setUserRole(storedRole);
-      setUserId(Number(storedUserId));
-      setEmail(storedEmail || '');
-      setIsSignedIn(true);
-      setCurrentPage(dashboardByRole[storedRole] || 'home');
+      if (companySetupToken || recruiterSetupToken || hiringManagerSetupToken) {
+        // Force logout if they are trying to setup a new account while logged in
+        setCurrentPage('company_setup_password');
+        setToken(null);
+        setUsername('');
+        setUserRole('candidate');
+        setUserId(null);
+        setEmail('');
+        setIsSignedIn(false);
+        localStorage.removeItem('token');
+        localStorage.removeItem('name');
+        localStorage.removeItem('role');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('email');
+      } else {
+        setToken(storedToken);
+        setUsername(storedName);
+        setUserRole(storedRole);
+        setUserId(Number(storedUserId));
+        setEmail(storedEmail || '');
+        setIsSignedIn(true);
+        setCurrentPage(dashboardByRole[storedRole] || 'home');
+      }
     } else {
-      if (companySetupToken) {
+      if (companySetupToken || recruiterSetupToken || hiringManagerSetupToken) {
         setCurrentPage('company_setup_password');
       } else if (path.startsWith('/admin')) {
         setCurrentPage('admin_login');

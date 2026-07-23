@@ -61,19 +61,15 @@ interface RecruiterProfile {
 }
 
 // ──────────── Static Data ────────────
-const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981", "#14b8a6", "#0ea5e9"];
+const COLORS = ["#eab308", "#ca8a04", "#d97706", "#f59e0b", "#10b981", "#14b8a6", "#0ea5e9"];
 const PROFILE: RecruiterProfile = {
   name: "Ava Johnson", email: "ava.j@hireminds.co", phone: "+1 (415) 555-0281",
   role: "Senior Recruiter", avatar: COLORS[0], joinedAt: "2025-06-15",
   bio: "Experienced tech recruiter specializing in engineering and data roles across Fortune 500 companies.",
 };
 
-const TASKS: TaskItem[] = [];
-
 const ACTIVITIES: ActivityFeed[] = [];
-
 const INTERVIEWS: InterviewEvent[] = [];
-
 const ASSESSMENTS: Assessment[] = [];
 
 // ──────────── Main Component ────────────
@@ -85,13 +81,13 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
   const [section, setSection] = useState<"overview" | "pipeline" | "interviews" | "settings">("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [showLogout, setShowLogout] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileCandidate, setProfileCandidate] = useState<Candidate | null>(null);
   const [pipelineSub, setPipelineSub] = useState<SubSection>("kanban");
   const [interviewsSub, setInterviewsSub] = useState<InterviewSubSection>("scheduling");
   const [settingsSub, setSettingsSub] = useState<SettingsSubSection>("profile");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
-  const [tasks, setTasks] = useState<TaskItem[]>([]); // Cleared mock data
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [profile, setProfile] = useState<RecruiterProfile>({
     ...PROFILE,
     name: username || PROFILE.name,
@@ -103,26 +99,40 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
 
   useEffect(() => {
-    fetch('/api/candidates', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setCandidatesData(data.map((c: any, i) => ({
-            id: c.id.toString(),
-            name: c.name || "Unknown Candidate",
-            role: c.currentJobTitle || "Applicant",
+    Promise.all([
+      fetch('/api/candidates', { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json()),
+      fetch('/api/applications', { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json())
+    ])
+      .then(([candidatesRes, applicationsRes]) => {
+        if (!Array.isArray(candidatesRes) || !Array.isArray(applicationsRes)) return;
+
+        const candsMap = new Map();
+        candidatesRes.forEach((c: any) => candsMap.set(c.id, c));
+
+        const mappedApplicants = applicationsRes.map((app: any, i: number) => {
+          const c = candsMap.get(app.candidateId) || {};
+
+          let stg: Stage = "Shortlisted";
+          if (app.status === "Applied") stg = "Shortlisted";
+          else if (app.status === "Interview") stg = "Technical";
+          else if (app.status === "Offer") stg = "Offer";
+          else if (app.status === "Hired") stg = "Hired";
+          else if (app.status === "Rejected") stg = "Rejected";
+
+          return {
+            id: app.id.toString(),
+            name: app.candidateName || c.name || "Unknown Applicant",
+            role: app.jobTitle || c.currentJobTitle || "Applicant",
             department: "Engineering",
             seniority: c.experienceLevel || "Mid",
-            source: "Company Site",
-            stage: "Shortlisted", // Default mock stage since it relies on Application
-            score: 85, // mock score
+            source: "Platform Application",
+            stage: stg,
+            score: 85,
             yearsExp: 3,
             location: c.location || "Remote",
-            appliedAt: new Date().toISOString(),
-            shortlistedAt: new Date().toISOString(),
-            daysInPipeline: 2,
+            appliedAt: app.dateSubmitted || new Date().toISOString(),
+            shortlistedAt: app.dateSubmitted || new Date().toISOString(),
+            daysInPipeline: Math.max(1, Math.floor((new Date().getTime() - new Date(app.dateSubmitted || new Date()).getTime()) / (1000 * 3600 * 24))),
             status: "Active",
             avatar: COLORS[i % COLORS.length],
             email: c.email || "",
@@ -133,11 +143,16 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
             noticePeriod: "",
             skills: c.skills ? c.skills.split(',') : [],
             summary: c.bio || "",
-            resumeMatch: 90,
+            resumeMatch: 95,
             interviewHistory: []
-          })));
-        }
-      }).catch(console.error);
+          };
+        });
+
+        // Optional: Include mock candidates manually if array is empty so dashboard doesn't look totally blank initially?
+        // Let's rely entirely on actual applicants as requested by the user flow!
+        setCandidatesData(mappedApplicants);
+      })
+      .catch(console.error);
   }, [token]);
 
   const navItems = [
@@ -176,14 +191,14 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
   return (
     <div className={`min-h-screen transition-colors duration-300 ${dark ? "bg-slate-950 text-slate-100" : "bg-[#f4f6fb] text-slate-900"}`}>
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-0">
-        <div className={`absolute -top-40 -left-40 h-96 w-96 rounded-full blur-3xl opacity-20 ${dark ? "bg-indigo-500" : "bg-indigo-300"}`} />
-        <div className={`absolute top-1/3 -right-40 h-96 w-96 rounded-full blur-3xl opacity-20 ${dark ? "bg-teal-500" : "bg-teal-300"}`} />
+        <div className={`absolute -top-40 -left-40 h-96 w-96 rounded-full blur-3xl opacity-20 ${dark ? "bg-amber-600" : "bg-amber-300"}`} />
+        <div className={`absolute top-1/3 -right-40 h-96 w-96 rounded-full blur-3xl opacity-20 ${dark ? "bg-yellow-600" : "bg-yellow-200"}`} />
       </div>
 
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 z-50 h-full flex flex-col transition-all duration-300 border-r ${dark ? "bg-slate-950/95 border-slate-800" : "bg-white/95 border-slate-200"} backdrop-blur-xl ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 ${sidebarCollapsed ? "lg:w-[72px]" : "lg:w-[260px]"} w-[260px`}>
+      {/* Sidebar - Side profile section removed */}
+      <aside className={`fixed top-0 left-0 z-50 h-full flex flex-col transition-all duration-300 border-r ${dark ? "bg-slate-950/95 border-slate-800" : "bg-white/95 border-slate-200"} backdrop-blur-xl ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 ${sidebarCollapsed ? "lg:w-[72px]" : "lg:w-[260px]"} w-[260px]`}>
         <div className={`flex items-center gap-3 px-4 h-16 border-b flex-shrink-0 ${dark ? "border-slate-800" : "border-slate-200"} ${sidebarCollapsed ? "justify-center" : ""}`}>
           {!sidebarCollapsed && (
             <div className="overflow-hidden">
@@ -203,7 +218,7 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
         <nav className="flex-1 py-4 px-3 overflow-y-auto space-y-1">
           {navItems.map((n) => (
             <button key={n.id} onClick={() => { setSection(n.id); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${section === n.id ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"} ${sidebarCollapsed ? "justify-center" : ""}`}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${section === n.id ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-semibold shadow-lg shadow-amber-500/20" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"} ${sidebarCollapsed ? "justify-center" : ""}`}
               title={sidebarCollapsed ? n.label : undefined}
             >
               <span className="flex-shrink-0">{n.icon}</span>
@@ -211,21 +226,11 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
             </button>
           ))}
         </nav>
-
-        {/* User pill */}
-        {!sidebarCollapsed && (
-          <div className={`px-3 pb-4 pt-2 border-t ${dark ? "border-slate-800" : "border-slate-200"}`}>
-            <div className={`flex items-center gap-3 px-3 py-2 rounded-xl ${dark ? "bg-slate-900/60" : "bg-slate-50"}`}>
-              <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: profile.avatar }}>{profile.name.split(" ").map((n) => n[0]).join("")}</div>
-              <div className="min-w-0"><p className="text-xs font-medium truncate">{profile.name}</p><p className={`text-[10px] truncate ${dark ? "text-slate-500" : "text-slate-400"}`}>{profile.role}</p></div>
-            </div>
-          </div>
-        )}
       </aside>
 
-      {/* Main */}
+      {/* Main Header & Workspace */}
       <div className={`relative z-10 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[72px]" : "lg:ml-[260px]"}`}>
-        <header className={`sticky top-0 z-30 flex items-center gap-4 h-14 px-4 sm:px-6 border-b backdrop-blur-xl ${dark ? "bg-slate-950/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
+        <header className={`sticky top-0 z-30 flex items-center gap-4 h-16 px-4 sm:px-6 border-b backdrop-blur-xl ${dark ? "bg-slate-950/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
           <button onClick={() => setSidebarOpen(true)} className={`lg:hidden p-2 -ml-2 rounded-lg ${dark ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}>
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
@@ -233,42 +238,70 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
             <h2 className="text-base font-bold tracking-tight truncate">{sectionTitles[section].title}</h2>
             <p className={`text-xs truncate ${dark ? "text-slate-400" : "text-slate-500"}`}>{sectionTitles[section].subtitle}</p>
           </div>
-          <div className="flex items-center gap-1.5">
-            <button onClick={() => setDark(!dark)} className={`h-8 w-8 rounded-lg flex items-center justify-center ${dark ? "hover:bg-slate-800 text-slate-400" : "hover:bg-slate-100 text-slate-500"}`}>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setDark(!dark)} className={`h-9 w-9 rounded-lg flex items-center justify-center ${dark ? "hover:bg-slate-800 text-slate-400" : "hover:bg-slate-100 text-slate-500"}`}>
               {dark ? <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path strokeLinecap="round" d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5" /></svg>
                 : <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>}
             </button>
-            <button onClick={() => setShowLogout(true)} className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold ${dark ? "border-slate-800 hover:bg-slate-800/60" : "border-slate-200 hover:bg-slate-100 bg-white"}`}>
-              <div className="h-6 w-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: profile.avatar }}>{profile.name.split(" ").map((n) => n[0]).join("")}</div>
-              <span>{profile.name.split(" ")[0]}</span>
-            </button>
+
+            {/* Profile Dropdown Component with Logout button inside */}
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border text-xs font-semibold ${dark ? "border-slate-800 hover:bg-slate-800/60" : "border-slate-200 hover:bg-slate-100 bg-white"}`}
+              >
+                <div className="h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-950 bg-gradient-to-br from-amber-400 to-yellow-500">
+                  RC
+                </div>
+                <span className="hidden sm:inline">{profile.name.split(" ")[0]}</span>
+                <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 transition-transform ${dropdownOpen ? "rotate-180" : ""} ${dark ? "text-slate-500" : "text-slate-400"}`} fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Profile Dropdown Menu */}
+              {dropdownOpen && (
+                <div className={`absolute right-0 mt-2 w-48 rounded-xl border shadow-xl py-1 z-50 backdrop-blur-md ${dark ? "bg-slate-900/95 border-slate-800 text-slate-100" : "bg-white/95 border-slate-200 text-slate-900"}`}>
+                  <button
+                    onClick={() => { setSection("settings"); setDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2 ${dark ? "hover:bg-slate-800/80" : "hover:bg-slate-100"}`}
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4 w-4 text-amber-500" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="7" r="4" /><path strokeLinecap="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /></svg>
+                    Profile Settings
+                  </button>
+                  <div className={`my-1 border-t ${dark ? "border-slate-800" : "border-slate-100"}`} />
+                  <button
+                    onClick={() => { setDropdownOpen(false); onLogout(); }}
+                    className={`w-full text-left px-4 py-2.5 text-xs font-semibold text-rose-500 flex items-center gap-2 ${dark ? "hover:bg-slate-800/80" : "hover:bg-slate-100"}`}
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
         <main className="px-4 sm:px-6 py-6 max-w-[1400px]">
-          {/* Dashboard / Overview */}
           {section === "overview" && (
             <OverviewSection dark={dark} stats={stats} tasks={tasks} toggleTask={toggleTask} activities={ACTIVITIES} />
           )}
 
-          {/* Candidate Pipeline */}
           {section === "pipeline" && (
             <PipelineSection dark={dark} pipelineSub={pipelineSub} setPipelineSub={setPipelineSub} pipeline={pipeline} setSelectedCandidate={setSelectedCandidate} />
           )}
 
-          {/* Interviews */}
           {section === "interviews" && (
             <InterviewsSection dark={dark} sub={interviewsSub} setSub={setInterviewsSub} interviews={INTERVIEWS} assessments={ASSESSMENTS} />
           )}
 
-          {/* Settings */}
           {section === "settings" && (
             <SettingsSection dark={dark} sub={settingsSub} setSub={setSettingsSub} profile={profile} setProfile={setProfile} onLogout={onLogout} onSwitch={onSwitch} />
           )}
         </main>
       </div>
 
-      {/* Candidate Profile Modal */}
       {profileCandidate && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setProfileCandidate(null)} />
@@ -284,7 +317,6 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
         </div>
       )}
 
-      {/* Candidate Detail (Pipeline) */}
       {selectedCandidate && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedCandidate(null)} />
@@ -299,9 +331,6 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
           </div>
         </div>
       )}
-
-      {/* Logout Modal */}
-      {showLogout && <LogoutModal dark={dark} onClose={() => setShowLogout(false)} onLogout={onLogout} onSwitch={onSwitch} />}
     </div>
   );
 }
@@ -310,22 +339,20 @@ export default function RecruiterDashboard({ onLogout, onSwitch }: { onLogout: (
 function OverviewSection({ dark, stats, tasks, toggleTask, activities }: { dark: boolean; stats: any; tasks: TaskItem[]; toggleTask: (id: string) => void; activities: ActivityFeed[] }) {
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricCard dark={dark} label="Active Jobs" value={stats.activeJobs} color="#6366f1" />
-        <MetricCard dark={dark} label="New Applicants" value={stats.newApps} color="#0ea5e9" />
+        <MetricCard dark={dark} label="Active Jobs" value={stats.activeJobs} color="#eab308" />
+        <MetricCard dark={dark} label="New Applicants" value={stats.newApps} color="#ca8a04" />
         <MetricCard dark={dark} label="Avg Time-to-Fill" value={stats.avgFill} color="#f59e0b" />
         <MetricCard dark={dark} label="Offer Acceptance" value={stats.acceptanceRate} color="#10b981" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Task List */}
         <div className={`lg:col-span-1 rounded-2xl border p-5 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
           <h3 className="font-bold text-sm mb-4">Pending Tasks</h3>
           <div className="space-y-2">
             {tasks.map((t) => (
               <label key={t.id} className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all ${t.done ? (dark ? "bg-slate-800/30 opacity-50" : "bg-slate-50 opacity-50") : (dark ? "bg-slate-950/40 hover:bg-slate-950/60" : "bg-slate-50 hover:bg-slate-100")}`}>
-                <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} className="mt-0.5 accent-indigo-500" />
+                <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} className="mt-0.5 accent-amber-500" />
                 <div className="min-w-0 flex-1">
                   <p className={`text-xs font-bold ${t.done ? "line-through" : ""}`}>{t.title}</p>
                   <p className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>{t.candidate} · {t.due}</p>
@@ -336,7 +363,6 @@ function OverviewSection({ dark, stats, tasks, toggleTask, activities }: { dark:
           </div>
         </div>
 
-        {/* Recent Activity */}
         <div className={`lg:col-span-2 rounded-2xl border p-5 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
           <h3 className="font-bold text-sm mb-4">Recent Activity</h3>
           <div className="space-y-3 max-h-[320px] overflow-y-auto pr-2">
@@ -360,15 +386,14 @@ function OverviewSection({ dark, stats, tasks, toggleTask, activities }: { dark:
         </div>
       </div>
 
-      {/* Trend Chart */}
       <div className={`rounded-2xl border p-5 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
         <h3 className="font-bold text-sm mb-4">Application Trends</h3>
         <div className={`rounded-xl border p-4 ${dark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50 border-slate-100"}`}>
           <div className="grid grid-cols-4 gap-4 text-center">
-            <div><p className={`text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>This Week</p><p className="text-lg font-extrabold text-emerald-400">+24</p></div>
-            <div><p className={`text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>Screening</p><p className="text-lg font-extrabold text-indigo-400">18</p></div>
-            <div><p className={`text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>Interviewing</p><p className="text-lg font-extrabold text-amber-400">12</p></div>
-            <div><p className={`text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>Offers Out</p><p className="text-lg font-extrabold text-rose-400">5</p></div>
+            <div><p className={`text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>This Week</p><p className="text-lg font-extrabold text-amber-500">+24</p></div>
+            <div><p className={`text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>Screening</p><p className="text-lg font-extrabold text-amber-400">18</p></div>
+            <div><p className={`text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>Interviewing</p><p className="text-lg font-extrabold text-amber-600">12</p></div>
+            <div><p className={`text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>Offers Out</p><p className="text-lg font-extrabold text-emerald-400">5</p></div>
           </div>
         </div>
       </div>
@@ -397,7 +422,7 @@ function PipelineSection({ dark, pipelineSub, setPipelineSub, pipeline, setSelec
       <div className="flex gap-1">
         {(["kanban", "database"] as const).map((s) => (
           <button key={s} onClick={() => setPipelineSub(s)}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${pipelineSub === s ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${pipelineSub === s ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 shadow-lg shadow-amber-500/20" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
           >{s === "kanban" ? "Kanban Board" : "Talent Pool Database"}</button>
         ))}
       </div>
@@ -417,7 +442,7 @@ function PipelineSection({ dark, pipelineSub, setPipelineSub, pipeline, setSelec
                   <button key={c.id} onClick={() => setSelectedCandidate(c)}
                     className={`w-full text-left p-3 rounded-xl border transition-all hover:-translate-y-0.5 ${dark ? "bg-slate-950/60 border-slate-800 hover:border-slate-600" : "bg-white border-slate-200 hover:border-slate-400 shadow-sm"}`}>
                     <div className="flex items-center gap-2.5">
-                      <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: c.avatar }}>{c.name.split(" ").map((n) => n[0]).join("")}</div>
+                      <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-950 flex-shrink-0" style={{ background: c.avatar }}>{c.name.split(" ").map((n) => n[0]).join("")}</div>
                       <div className="min-w-0"><p className="text-xs font-bold truncate">{c.name}</p><p className={`text-[10px] truncate ${dark ? "text-slate-500" : "text-slate-400"}`}>{c.role}</p></div>
                     </div>
                   </button>
@@ -437,12 +462,12 @@ function PipelineSection({ dark, pipelineSub, setPipelineSub, pipeline, setSelec
             <tbody>
               {Object.values(pipeline).flat().slice(0, 20).map((c) => (
                 <tr key={c.id} className={`border-t ${dark ? "border-slate-800/50 hover:bg-slate-900/40" : "border-slate-100 hover:bg-slate-50"}`}>
-                  <td className="py-2.5 px-4"><div className="flex items-center gap-2"><div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: c.avatar }}>{c.name.split(" ").map((n) => n[0]).join("")}</div><span className="font-semibold">{c.name}</span></div></td>
+                  <td className="py-2.5 px-4"><div className="flex items-center gap-2"><div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold text-slate-950" style={{ background: c.avatar }}>{c.name.split(" ").map((n) => n[0]).join("")}</div><span className="font-semibold">{c.name}</span></div></td>
                   <td className="py-2.5 px-4">{c.role}</td>
                   <td className="py-2.5 px-4 text-center"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${dark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>{c.stage}</span></td>
                   <td className={`py-2.5 px-4 text-center font-bold ${c.score >= 85 ? "text-emerald-400" : c.score >= 70 ? "text-amber-400" : "text-rose-400"}`}>{c.score}</td>
                   <td className="py-2.5 px-4 text-right text-slate-400">{c.source}</td>
-                  <td className="py-2.5 px-4 text-right"><button onClick={() => setSelectedCandidate(c)} className="text-indigo-400 hover:text-indigo-300 text-[10px] font-bold">View →</button></td>
+                  <td className="py-2.5 px-4 text-right"><button onClick={() => setSelectedCandidate(c)} className="text-amber-500 hover:text-amber-400 text-[10px] font-bold">View →</button></td>
                 </tr>
               ))}
             </tbody>
@@ -458,12 +483,12 @@ function CandidateDetail({ candidate, dark }: { candidate: Candidate; dark: bool
   return (
     <div className="space-y-4">
       <div className="flex items-start gap-4">
-        <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold text-white shadow-lg flex-shrink-0" style={{ background: candidate.avatar }}>{candidate.name.split(" ").map((n) => n[0]).join("")}</div>
+        <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold text-slate-950 shadow-lg flex-shrink-0" style={{ background: candidate.avatar }}>{candidate.name.split(" ").map((n) => n[0]).join("")}</div>
         <div className="min-w-0 flex-1">
           <h4 className="text-base font-bold">{candidate.name}</h4>
           <p className={`text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>{candidate.role} · {candidate.department}</p>
           <div className="flex flex-wrap gap-1.5 mt-2">
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${dark ? "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-500/30" : "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200"}`}>{candidate.stage}</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${dark ? "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30" : "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200"}`}>{candidate.stage}</span>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${dark ? "bg-slate-700 text-slate-300" : "bg-slate-100 text-slate-600"}`}>{candidate.seniority}</span>
           </div>
         </div>
@@ -511,7 +536,7 @@ function InterviewsSection({ dark, sub, setSub, interviews, assessments }: { dar
       <div className="flex gap-1 flex-wrap">
         {(["scheduling", "scorecards", "assessments"] as const).map((s) => (
           <button key={s} onClick={() => setSub(s)}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${sub === s ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${sub === s ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 shadow-lg shadow-amber-500/20" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
           >{s === "scheduling" ? " Scheduling" : s === "scorecards" ? "📝 Scorecards" : "💻 Assessments"}</button>
         ))}
       </div>
@@ -529,7 +554,7 @@ function InterviewsSection({ dark, sub, setSub, interviews, assessments }: { dar
                   <td className="py-3 px-4">{new Date(i.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {i.time}</td>
                   <td className="py-3 px-4">{i.type}</td>
                   <td className="py-3 px-4 text-slate-400">{i.interviewer}</td>
-                  <td className="py-3 px-4 text-center"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${i.status === "Scheduled" ? "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-500/30" : i.status === "Completed" ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30" : "bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-500/30"}`}>{i.status}</span></td>
+                  <td className="py-3 px-4 text-center"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${i.status === "Scheduled" ? "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30" : i.status === "Completed" ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30" : "bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-500/30"}`}>{i.status}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -550,7 +575,7 @@ function InterviewsSection({ dark, sub, setSub, interviews, assessments }: { dar
                   <div key={cat.name} className="flex items-center gap-3">
                     <span className={`text-xs font-semibold w-28 ${dark ? "text-slate-400" : "text-slate-500"}`}>{cat.name}</span>
                     <div className={`flex-1 h-2 rounded-full overflow-hidden ${dark ? "bg-slate-800" : "bg-slate-100"}`}>
-                      <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" style={{ width: `${(cat.score / cat.max) * 100}%` }} />
+                      <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-500" style={{ width: `${(cat.score / cat.max) * 100}%` }} />
                     </div>
                     <span className="text-xs font-bold w-10 text-right">{cat.score}/{cat.max}</span>
                   </div>
@@ -594,8 +619,8 @@ function SettingsSection({ dark, sub, setSub, profile, setProfile, onLogout, onS
       <div className="flex gap-1">
         {(["profile", "notifications", "preferences"] as const).map((s) => (
           <button key={s} onClick={() => setSub(s)}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${sub === s ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
-          >{s === "profile" ? "👤 Profile" : s === "notifications" ? "🔔 Notifications" : "⚙️ Preferences"}</button>
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${sub === s ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 shadow-lg shadow-amber-500/20" : dark ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
+          >{s === "profile" ? "Profile" : s === "notifications" ? "Notifications" : "Preferences"}</button>
         ))}
       </div>
 
@@ -603,37 +628,34 @@ function SettingsSection({ dark, sub, setSub, profile, setProfile, onLogout, onS
         <div className="space-y-6">
           <div className={`rounded-2xl border p-6 ${dark ? "bg-slate-900/70 border-slate-800" : "bg-white border-slate-200/70 shadow-sm"}`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-6 pb-6 border-b border-slate-800/60">
-              <div className="h-20 w-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-xl" style={{ background: profile.avatar }}>{profile.name.split(" ").map((n) => n[0]).join("")}</div>
+              <div className="h-20 w-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-slate-950 shadow-xl" style={{ background: profile.avatar }}>{profile.name.split(" ").map((n) => n[0]).join("")}</div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-xl font-extrabold">{profile.name}</h3>
                 <p className={`text-sm ${dark ? "text-slate-400" : "text-slate-500"}`}>{profile.role}</p>
                 <p className={`text-xs mt-1 ${dark ? "text-slate-500" : "text-slate-400"}`}>Member since {new Date(profile.joinedAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}</p>
               </div>
-              <button onClick={onSwitch} className="px-4 py-2 rounded-lg text-xs font-bold text-slate-300 border border-slate-700 hover:bg-slate-800/60 transition-colors flex-shrink-0">
-                Switch to Hiring Manager
-              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 ${dark ? "text-slate-300" : "text-slate-700"}`}>Full Name</label>
-                <input value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={`w-full px-3 py-2.5 rounded-xl text-sm ${dark ? "bg-slate-950/60 border border-slate-700/60 text-slate-100 focus:border-indigo-500" : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-indigo-500"} outline-none transition-all`} />
+                <input value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={`w-full px-3 py-2.5 rounded-xl text-sm ${dark ? "bg-slate-950/60 border border-slate-700/60 text-slate-100 focus:border-amber-500" : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-amber-500"} outline-none transition-all`} />
               </div>
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 ${dark ? "text-slate-300" : "text-slate-700"}`}>Email</label>
-                <input value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} className={`w-full px-3 py-2.5 rounded-xl text-sm ${dark ? "bg-slate-950/60 border border-slate-700/60 text-slate-100 focus:border-indigo-500" : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-indigo-500"} outline-none transition-all`} />
+                <input value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} className={`w-full px-3 py-2.5 rounded-xl text-sm ${dark ? "bg-slate-950/60 border border-slate-700/60 text-slate-100 focus:border-amber-500" : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-amber-500"} outline-none transition-all`} />
               </div>
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 ${dark ? "text-slate-300" : "text-slate-700"}`}>Phone</label>
-                <input value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={`w-full px-3 py-2.5 rounded-xl text-sm ${dark ? "bg-slate-950/60 border border-slate-700/60 text-slate-100 focus:border-indigo-500" : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-indigo-500"} outline-none transition-all`} />
+                <input value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={`w-full px-3 py-2.5 rounded-xl text-sm ${dark ? "bg-slate-950/60 border border-slate-700/60 text-slate-100 focus:border-amber-500" : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-amber-500"} outline-none transition-all`} />
               </div>
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 ${dark ? "text-slate-300" : "text-slate-700"}`}>Role</label>
-                <input value={profile.role} onChange={(e) => setProfile({ ...profile, role: e.target.value })} className={`w-full px-3 py-2.5 rounded-xl text-sm ${dark ? "bg-slate-950/60 border border-slate-700/60 text-slate-100 focus:border-indigo-500" : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-indigo-500"} outline-none transition-all`} />
+                <input value={profile.role} onChange={(e) => setProfile({ ...profile, role: e.target.value })} className={`w-full px-3 py-2.5 rounded-xl text-sm ${dark ? "bg-slate-950/60 border border-slate-700/60 text-slate-100 focus:border-amber-500" : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-amber-500"} outline-none transition-all`} />
               </div>
               <div className="sm:col-span-2">
                 <label className={`block text-xs font-semibold mb-1.5 ${dark ? "text-slate-300" : "text-slate-700"}`}>Bio</label>
-                <textarea value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} rows={3} className={`w-full px-3 py-2.5 rounded-xl text-sm resize-none ${dark ? "bg-slate-950/60 border border-slate-700/60 text-slate-100 focus:border-indigo-500" : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-indigo-500"} outline-none transition-all`} />
+                <textarea value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} rows={3} className={`w-full px-3 py-2.5 rounded-xl text-sm resize-none ${dark ? "bg-slate-950/60 border border-slate-700/60 text-slate-100 focus:border-amber-500" : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-amber-500"} outline-none transition-all`} />
               </div>
             </div>
           </div>
@@ -658,7 +680,7 @@ function SettingsSection({ dark, sub, setSub, profile, setProfile, onLogout, onS
           ].map((n, i) => (
             <div key={i} className={`flex items-center justify-between py-3 border-b last:border-none ${dark ? "border-slate-800/60" : "border-slate-100"}`}>
               <div><p className="text-xs font-semibold">{n.label}</p><p className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>{n.desc}</p></div>
-              <div className={`h-5 w-10 rounded-full transition-colors cursor-pointer ${n.on ? "bg-indigo-500" : dark ? "bg-slate-700" : "bg-slate-300"}`}>
+              <div className={`h-5 w-10 rounded-full transition-colors cursor-pointer ${n.on ? "bg-amber-500" : dark ? "bg-slate-700" : "bg-slate-300"}`}>
                 <div className={`h-4 w-4 rounded-full bg-white mt-0.5 transition-all ${n.on ? "ml-5.5 translate-x-0.5" : "ml-0.5"}`} />
               </div>
             </div>
@@ -684,35 +706,13 @@ function SettingsSection({ dark, sub, setSub, profile, setProfile, onLogout, onS
             </div>
             <div className="flex items-center justify-between py-3 border-t border-slate-800/60">
               <div><p className="text-xs font-semibold">Dark Mode</p><p className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>Toggle the interface theme</p></div>
-              <button onClick={() => document.documentElement.classList.toggle("dark")} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${dark ? "bg-indigo-500/15 text-indigo-300" : "bg-slate-100 text-slate-600"}`}>
+              <button onClick={() => document.documentElement.classList.toggle("dark")} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${dark ? "bg-amber-500/15 text-amber-300" : "bg-slate-100 text-slate-600"}`}>
                 {dark ? "☀️ Light" : "🌙 Dark"}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ──────────── Logout Modal ───────────
-function LogoutModal({ dark, onClose, onLogout, onSwitch }: { dark: boolean; onClose: () => void; onLogout: () => void; onSwitch: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative w-full max-w-sm rounded-2xl border shadow-2xl p-6 animate-fadeIn ${dark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
-        <h3 className="text-base font-bold mb-4">Manage Session</h3>
-        <div className="space-y-2.5">
-          <button onClick={() => { onSwitch(); onClose(); }} className={`w-full flex items-center justify-between p-3 rounded-xl border text-left text-xs font-semibold ${dark ? "bg-indigo-500/15 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/25" : "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"}`}>
-            <span>Switch to Hiring Manager</span>
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-          </button>
-          <button onClick={onLogout} className={`w-full flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-semibold ${dark ? "bg-rose-500/15 border-rose-500/30 text-rose-300 hover:bg-rose-500/25" : "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100"}`}>
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" /></svg>
-            Log Out
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
