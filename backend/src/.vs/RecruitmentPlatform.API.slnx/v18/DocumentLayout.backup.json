@@ -3,6 +3,14 @@
   "WorkspaceRootPath": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\xampp\\htdocs\\hiremind\\backend\\src\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\xampp\\htdocs\\hiremind\\backend\\src\\models\\application.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:models\\application.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\xampp\\htdocs\\hiremind\\backend\\src\\migrations\\20260723190729_addrecruiternotestoapplication.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:migrations\\20260723190729_addrecruiternotestoapplication.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -15,20 +23,12 @@
       "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:migrations\\appdbcontextmodelsnapshot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\xampp\\htdocs\\hiremind\\backend\\src\\models\\application.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:models\\application.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\xampp\\htdocs\\hiremind\\backend\\src\\dtos\\application\\applicationresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:dtos\\application\\applicationresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\xampp\\htdocs\\hiremind\\backend\\src\\services\\applicationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:services\\applicationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\xampp\\htdocs\\hiremind\\backend\\src\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{D00EB0DD-4C28-3141-3EDD-515AB09C4237}|RecruitmentPlatform.API.csproj|c:\\xampp\\htdocs\\hiremind\\backend\\src\\services\\iemailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -143,19 +143,6 @@
             {
               "$type": "Document",
               "DocumentIndex": 5,
-              "Title": "ApplicationService.cs",
-              "DocumentMoniker": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\Services\\ApplicationService.cs",
-              "RelativeDocumentMoniker": "Services\\ApplicationService.cs",
-              "ToolTip": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\Services\\ApplicationService.cs",
-              "RelativeToolTip": "Services\\ApplicationService.cs",
-              "ViewState": "AgIAAHsAAAAAAAAAAAD4v4sAAAA3AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-23T19:12:36.898Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
               "Title": "ApplicationResponseDto.cs",
               "DocumentMoniker": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\DTOs\\Application\\ApplicationResponseDto.cs",
               "RelativeDocumentMoniker": "DTOs\\Application\\ApplicationResponseDto.cs",
@@ -163,12 +150,11 @@
               "RelativeToolTip": "DTOs\\Application\\ApplicationResponseDto.cs",
               "ViewState": "AgIAAAoAAAAAAAAAAAAxwBQAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-23T19:12:34.819Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-23T19:12:34.819Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 1,
               "Title": "Application.cs",
               "DocumentMoniker": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\Models\\Application.cs",
               "RelativeDocumentMoniker": "Models\\Application.cs",
@@ -181,7 +167,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "AppDbContextModelSnapshot.cs",
               "DocumentMoniker": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\Migrations\\AppDbContextModelSnapshot.cs",
               "RelativeDocumentMoniker": "Migrations\\AppDbContextModelSnapshot.cs",
@@ -189,12 +175,11 @@
               "RelativeToolTip": "Migrations\\AppDbContextModelSnapshot.cs",
               "ViewState": "AgIAACMAAAAAAAAAAAAMwDAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-23T19:12:30.647Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-23T19:12:30.647Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "20260723190729_AddRecruiterNotesToApplication.Designer.cs",
               "DocumentMoniker": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\Migrations\\20260723190729_AddRecruiterNotesToApplication.Designer.cs",
               "RelativeDocumentMoniker": "Migrations\\20260723190729_AddRecruiterNotesToApplication.Designer.cs",
@@ -202,21 +187,45 @@
               "RelativeToolTip": "Migrations\\20260723190729_AddRecruiterNotesToApplication.Designer.cs",
               "ViewState": "AgIAACYAAAAAAAAAAAAMwDAAAAA2AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-23T19:12:23.961Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-23T19:12:23.961Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 2,
               "Title": "20260723190729_AddRecruiterNotesToApplication.cs",
               "DocumentMoniker": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\Migrations\\20260723190729_AddRecruiterNotesToApplication.cs",
               "RelativeDocumentMoniker": "Migrations\\20260723190729_AddRecruiterNotesToApplication.cs",
               "ToolTip": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\Migrations\\20260723190729_AddRecruiterNotesToApplication.cs",
               "RelativeToolTip": "Migrations\\20260723190729_AddRecruiterNotesToApplication.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAABFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-07-23T19:11:10.161Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAADEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-07-20T16:08:05.863Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ApplicationService.cs",
+              "DocumentMoniker": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\Services\\ApplicationService.cs",
+              "RelativeDocumentMoniker": "Services\\ApplicationService.cs",
+              "ToolTip": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\Services\\ApplicationService.cs",
+              "RelativeToolTip": "Services\\ApplicationService.cs",
+              "ViewState": "AgIAAHsAAAAAAAAAAAD4v4sAAAA3AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-23T19:12:36.898Z"
             },
             {
               "$type": "Document",
@@ -228,8 +237,7 @@
               "RelativeToolTip": "Controllers\\ContactController.cs",
               "ViewState": "AgIAABgAAAAAAAAAAAAYwB8AAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-23T16:54:53.197Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-23T16:54:53.197Z"
             },
             {
               "$type": "Document",
@@ -241,8 +249,7 @@
               "RelativeToolTip": "Services\\IEmailService.cs",
               "ViewState": "AgIAAAwAAAAAAAAAAAAmwBIAAABsAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-21T13:10:59.399Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-21T13:10:59.399Z"
             },
             {
               "$type": "Document",
@@ -254,8 +261,7 @@
               "RelativeToolTip": "RecruitmentPlatform.API.csproj",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAACYAAAAKAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-07-22T16:44:40.494Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-22T16:44:40.494Z"
             },
             {
               "$type": "Document",
@@ -267,8 +273,7 @@
               "RelativeToolTip": "Services\\EmailService.cs",
               "ViewState": "AgIAADgAAAAAAAAAAAAuwD4AAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-21T13:15:38.766Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-21T13:15:38.766Z"
             },
             {
               "$type": "Document",
@@ -280,8 +285,7 @@
               "RelativeToolTip": "DTOs\\Contact\\ContactResponseDto.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-23T16:58:54.759Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-23T16:58:54.759Z"
             },
             {
               "$type": "Document",
@@ -293,21 +297,7 @@
               "RelativeToolTip": "DTOs\\Contact\\ContactRequestDto.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAAXAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-23T16:58:10.895Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "appsettings.json",
-              "DocumentMoniker": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\appsettings.json",
-              "RelativeDocumentMoniker": "appsettings.json",
-              "ToolTip": "C:\\xampp\\htdocs\\HireMind\\backend\\src\\appsettings.json",
-              "RelativeToolTip": "appsettings.json",
-              "ViewState": "AgIAAAkAAAAAAAAAAAAAAA4AAAAEAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-07-20T16:08:05.863Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-23T16:58:10.895Z"
             },
             {
               "$type": "Document",
@@ -319,8 +309,7 @@
               "RelativeToolTip": "Data\\AppDbContext.cs",
               "ViewState": "AgIAAGUAAAAAAAAAAAAAAG4AAABsAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-21T17:06:29.592Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-21T17:06:29.592Z"
             },
             {
               "$type": "Document",

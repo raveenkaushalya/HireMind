@@ -103,13 +103,13 @@ namespace RecruitmentPlatform.API.Services
         private static JobResponseDto MapToDto(JobPosting j) => new()
         {
             Id = j.Id,
-            CompanyId = j.CompanyId,
+            CompanyId = j.CompanyId ?? 0,
             Title = j.Title,
             Type = j.Type,
             Category = j.Category,
             Location = j.Location,
             SalaryRange = j.SalaryRange,
-            Applicants = j.Applicants,
+            Applicants = j.Applicants ?? 0,
             YearsOfExperienceNeeded = j.YearsOfExperienceNeeded,
             PostedDate = j.PostedDate,
             ClosingDate = j.ClosingDate,

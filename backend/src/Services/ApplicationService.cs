@@ -124,12 +124,12 @@ namespace RecruitmentPlatform.API.Services
         private static ApplicationResponseDto MapToDto(Application a) => new()
         {
             Id = a.Id,
-            CandidateId = a.CandidateId,
+            CandidateId = a.CandidateId ?? 0,
             CandidateName = a.Candidate?.Name,
-            JobPostingId = a.JobPostingId,
+            JobPostingId = a.JobPostingId ?? 0,
             JobTitle = a.JobPosting?.Title,
             Status = a.Status,
-            DateSubmitted = a.DateSubmitted,
+            DateSubmitted = a.DateSubmitted ?? DateTime.UtcNow,
             CandidateEmail = a.Candidate?.Email,
             CandidatePhone = a.Candidate?.PhoneNumber,
             CandidateLocation = a.Candidate?.Location,

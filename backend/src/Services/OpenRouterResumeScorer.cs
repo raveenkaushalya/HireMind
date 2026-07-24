@@ -44,7 +44,8 @@ namespace RecruitmentPlatform.API.Services
                         ""certifications"": [],
                         ""languages"": []
                     }
-                }";
+                }
+                CRITICAL INSTRUCTION: Return strictly valid JSON ONLY. DO NOT wrap your response in markdown formatting block quotes like ```json or ```. DO NOT include unescaped newlines or unescaped double quotes inside the string values.";
 
             var userPrompt = $"[Job Description]\n{jobDescription}\n\n[Resume Text]\n{resumeText}";
 
@@ -79,6 +80,20 @@ namespace RecruitmentPlatform.API.Services
             using var jsonDocument = JsonDocument.Parse(responseString);
             var root = jsonDocument.RootElement;
             var aiMessageContent = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+
+            if (!string.IsNullOrWhiteSpace(aiMessageContent))
+            {
+                aiMessageContent = aiMessageContent.Trim();
+                if (aiMessageContent.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+                    aiMessageContent = aiMessageContent.Substring(7);
+                else if (aiMessageContent.StartsWith("```", StringComparison.OrdinalIgnoreCase))
+                    aiMessageContent = aiMessageContent.Substring(3);
+
+                if (aiMessageContent.EndsWith("```"))
+                    aiMessageContent = aiMessageContent.Substring(0, aiMessageContent.Length - 3);
+
+                aiMessageContent = aiMessageContent.Trim();
+            }
 
             return aiMessageContent ?? "{}";
         }

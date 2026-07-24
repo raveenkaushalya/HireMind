@@ -29,20 +29,42 @@ public class DbInitializer
             ? "RecruitmentPlatformDB"
             : connectionBuilder.InitialCatalog;
 
+        try
+        {
+            // First check if we can connect to the target database directly
+            using var targetConn = new SqlConnection(_connectionString);
+            targetConn.Open();
+            // If we successfully opened it, the database already exists!
+            Console.WriteLine($"Database '{databaseName}' already exists. Skipping creation.");
+            return;
+        }
+        catch (SqlException)
+        {
+            // Database might not exist, proceed to try creating it via master
+            Console.WriteLine($"Database '{databaseName}' may not exist. Trying to create it via master...");
+        }
+
         // Temporarily swap the database name to 'master' to check whether the target database exists.
         connectionBuilder.InitialCatalog = "master";
 
-        using var connection = new SqlConnection(connectionBuilder.ConnectionString);
-        connection.Open();
-
-        var checkDbCommand = new SqlCommand($"SELECT db_id('{databaseName}')", connection);
-        var dbId = checkDbCommand.ExecuteScalar();
-
-        if (dbId == DBNull.Value || dbId == null)
+        try
         {
-            var createDbCommand = new SqlCommand($"CREATE DATABASE [{databaseName}]", connection);
-            createDbCommand.ExecuteNonQuery();
-            Console.WriteLine($"Database '{databaseName}' created successfully.");
+            using var connection = new SqlConnection(connectionBuilder.ConnectionString);
+            connection.Open();
+
+            var checkDbCommand = new SqlCommand($"SELECT db_id('{databaseName}')", connection);
+            var dbId = checkDbCommand.ExecuteScalar();
+
+            if (dbId == DBNull.Value || dbId == null)
+            {
+                var createDbCommand = new SqlCommand($"CREATE DATABASE [{databaseName}]", connection);
+                createDbCommand.ExecuteNonQuery();
+                Console.WriteLine($"Database '{databaseName}' created successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Could not check/create database via master (this is normal for hosted DBs if the DB already exists): {ex.Message}");
         }
     }
 
